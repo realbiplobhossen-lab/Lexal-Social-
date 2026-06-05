@@ -56,19 +56,17 @@ jobs:
           echo '[]' > android/app/src/main/assets/capacitor.plugins.json
           npx cap sync android
 
-      # ডুপ্লিকেট কোটলিন ক্লাস এবং মেটা-ডাটা সংঘাত দূর করার চূড়ান্ত কনফিগারেশন
-      - name: Fix Android Gradle Properties & Build Config
+      # ডুপ্লিকেট কোটলিন ক্লাস সংঘাতের মূল সমাধান (Exclude & Resolution Strategy)
+      - name: Inject Strict Gradle Duplicate Fixes
         run: |
           cd android
-          # ডুপ্লিকেট স্টুডিও ক্যাশ ও জেটপায়ার এনেবল করা
-          echo "android.useAndroidX=true" >> gradle.properties
-          echo "android.enableJetifier=true" >> gradle.properties
           
-          # অ্যাপ লেভেলের build.gradle ফাইলে এক্সক্লুড রুলস যুক্ত করা
-          sed -i '/android {/a \    packagingOptions {\n        resources {\n            excludes += ["META-INF/*.kotlin_module", "META-INF/packages_debug_release.kotlin_module"]\n        }\n    }' app/build.gradle
+          # ১. অ্যাপ লেভেলের build.gradle ফাইলে packagingOptions এক্সক্লুড রুলস যুক্ত করা
+          sed -i '/android {/a \    packagingOptions {\n        resources {\n            excludes += ["META-INF/*.kotlin_module", "META-INF/kotlin-stdlib-jdk7.kotlin_module", "META-INF/kotlin-stdlib-jdk8.kotlin_module", "META-INF/kotlin-stdlib.kotlin_module"]\n        }\n    }' app/build.gradle
           
-          # কনফিগারেশন স্ট্র্যাটেজি সেট করা যাতে ডুপ্লিকেট কোটলিন লাইব্রেরি ফোর্সড-ফিক্স হয়
-          echo "subprojects { project -> if (project.hasProperty('android')) { android { packagingOptions { resources { excludes += ['META-INF/搶otlin_module'] } } } } }" >> build.gradle
+          # ২. রুট লেভেলের build.gradle ফাইলে অল-প্রজেক্ট রেজোলিউশন স্ট্র্যাটেজি ফোর্স করা
+          echo "subprojects { project -> if (project.hasProperty('android')) { android { packagingOptions { resources { excludes += ['META-INF/搶otlin_module', 'META-INF/*'] } } } } }" >> build.gradle
+          echo "allprojects { configurations.all { resolutionStrategy { eachDependency { details -> if (details.requested.group == 'org.jetbrains.kotlin') { details.useVersion '1.8.22' } } } } }" >> build.gradle
 
       - name: Build Android Debug APK
         run: |
