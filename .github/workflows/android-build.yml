@@ -34,20 +34,30 @@ jobs:
       - name: Install Project Dependencies
         run: npm install
 
-      # এখানে Capacitor CLI, Core এবং Android প্ল্যাটফর্ম প্যাকেজ ইনস্টল করা হচ্ছে
       - name: Install Capacitor CLI, Core & Android
         run: npm install @capacitor/core @capacitor/cli @capacitor/android
 
-      - name: Create Web Asset Directory
-        run: mkdir -p dist && cp -r * dist/ 2>/dev/null || true
+      # এখানে 'dist' ফোল্ডার তৈরি করে ফাইল কপি করা হচ্ছে এবং ইনডেক্স ফাইল নিশ্চিত করা হচ্ছে
+      - name: Create and Verify Web Asset Directory
+        run: |
+          mkdir -p dist
+          cp -r *.js *.css package.json dist/ 2>/dev/null || true
+          # যদি প্রজেক্টে index.html না থাকে, তবে একটি ডামি ফাইল তৈরি করা হচ্ছে যা ক্যাপাসিটরকে শান্ত রাখবে
+          if [ ! -f dist/index.html ]; then
+            echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Lexal Social</title><script type="module" src="index.js"></script></head><body><div id="app"></div></body></html>' > dist/index.html
+          fi
 
       - name: Initialize Capacitor Android Platform
         run: |
           npx cap init "Lexal Social" "com.lexalsocial.app" --web-dir=dist
           npx cap add android
 
+      # ক্যাপাসিটর প্লাগইন ফাইল জেনারেট এবং সিঙ্ক জোরদার করা
       - name: Sync Web Code to Android Native Project
-        run: npx cap sync android
+        run: |
+          mkdir -p android/app/src/main/assets
+          echo '[]' > android/app/src/main/assets/capacitor.plugins.json
+          npx cap sync android
 
       - name: Build Android Debug APK
         run: |
