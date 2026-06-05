@@ -34,13 +34,16 @@ jobs:
       - name: Install Project Dependencies
         run: npm install
 
-      # এখানে যদি কোনো বিল্ড প্রসেস না থাকে, তবে এরর এড়াতে আমরা ফোল্ডার ট্র্যাকিং এর জন্য ফাঁকা রান রাখছি
+      # এখানে Capacitor CLI এবং Core গ্লোবাল বা লোকালভাবে ইনস্টল নিশ্চিত করা হচ্ছে
+      - name: Install Capacitor CLI & Core
+        run: npm install @capacitor/core @capacitor/cli
+
       - name: Create Web Asset Directory
         run: mkdir -p dist && cp -r * dist/ 2>/dev/null || true
 
       - name: Initialize Capacitor Android Platform
         run: |
-          npx cap init "Lexal Social" "com.lexalsocial.app" --web-dir=dist
+          npx cap init "Lexal Social" "com.lexalsocial.app" --web-dir=dist --web-dir=dist
           npx cap add android
 
       - name: Sync Web Code to Android Native Project
