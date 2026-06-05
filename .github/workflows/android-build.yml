@@ -33,7 +33,7 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      # এটি আপনার কোডকে অ্যান্ড্রোয়েডের পড়ার উপযোগী (HTML/CSS/JS) বান্ডেল তৈরি করবে
+      # এটি সমস্ত .jsx এবং .js ফাইলকে অ্যান্ড্রোয়েড ওয়েবভিউ এর উপযোগী করে বিল্ড করবে
       - name: Build Web Asset (Vite Production)
         run: npm run build
 
