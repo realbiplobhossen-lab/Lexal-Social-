@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore"; // 👈 ফায়ারস্টোর ইমপোর্ট করা হলো
 
-// আপনার আসল Firebase কনফিগারেশন
 const firebaseConfig = {
   apiKey: "AIzaSyAG4341Rk7sr1IJkLfVdbDT-oyuCB_GwjA",
   authDomain: "lexal-social.firebaseapp.com",
@@ -11,9 +11,11 @@ const firebaseConfig = {
   appId: "1:251651994141:web:9356eb4895de76b7b30cf4"
 };
 
-// Initialize Firebase
+// ফায়ারবেস অ্যাপ ইনিশিয়ালাইজ করা হলো
 const app = initializeApp(firebaseConfig);
 
-// auth-কে এক্সপোর্ট করা হলো যা App.jsx সরাসরি রুট থেকে রিড করছে
+// অথেনটিকেশন এবং ফায়ারস্টোর ডাটাবেজ অবজেক্ট তৈরি ও এক্সপোর্ট
 export const auth = getAuth(app);
+export const db = getFirestore(app); // 👈 এই লাইনটিই গিটহাব খুঁজছে এবং এর ফিক্স
+
 export default app;
