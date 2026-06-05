@@ -1,0 +1,18 @@
+import React, { useEffect, useState } from "react";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { db } from "../config/firebase";
+
+export default function PostCounter() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const q = query(collection(db, "posts"), where("hidden", "==", false));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setCount(snapshot.size);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  return <h3>Total Active Posts: {count}</h3>;
+}
