@@ -22,11 +22,12 @@ jobs:
           node-cache: 'npm'
           node-version: 20
 
+      # এখানে জাভা ভার্সন ১৭ থেকে বাড়িয়ে ২১ করা হলো, যা আপনার এররটি ফিক্স করবে
       - name: Install Java (Required for Android Build)
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
@@ -37,12 +38,10 @@ jobs:
       - name: Install Capacitor CLI, Core & Android
         run: npm install @capacitor/core @capacitor/cli @capacitor/android
 
-      # এখানে 'dist' ফোল্ডার তৈরি করে ফাইল কপি করা হচ্ছে এবং ইনডেক্স ফাইল নিশ্চিত করা হচ্ছে
       - name: Create and Verify Web Asset Directory
         run: |
           mkdir -p dist
           cp -r *.js *.css package.json dist/ 2>/dev/null || true
-          # যদি প্রজেক্টে index.html না থাকে, তবে একটি ডামি ফাইল তৈরি করা হচ্ছে যা ক্যাপাসিটরকে শান্ত রাখবে
           if [ ! -f dist/index.html ]; then
             echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Lexal Social</title><script type="module" src="index.js"></script></head><body><div id="app"></div></body></html>' > dist/index.html
           fi
@@ -52,7 +51,6 @@ jobs:
           npx cap init "Lexal Social" "com.lexalsocial.app" --web-dir=dist
           npx cap add android
 
-      # ক্যাপাসিটর প্লাগইন ফাইল জেনারেট এবং সিঙ্ক জোরদার করা
       - name: Sync Web Code to Android Native Project
         run: |
           mkdir -p android/app/src/main/assets
