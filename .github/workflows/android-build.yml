@@ -19,10 +19,9 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-cache: 'npm'
           node-version: 20
 
-      - name: Install Java (Required for Android Build)
+      - name: Install Java
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
@@ -31,40 +30,25 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Project Dependencies
+      - name: Install Dependencies
         run: npm install
 
-      - name: Install Capacitor CLI, Core & Android
-        run: npm install @capacitor/core @capacitor/cli @capacitor/android
+      # এটি আপনার কোডকে অ্যান্ড্রোয়েডের পড়ার উপযোগী (HTML/CSS/JS) বান্ডেল তৈরি করবে
+      - name: Build Web Asset (Vite Production)
+        run: npm run build
 
-      - name: Create and Verify Web Asset Directory
-        run: |
-          mkdir -p dist
-          cp -r *.js *.css package.json dist/ 2>/dev/null || true
-          if [ ! -f dist/index.html ]; then
-            echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Lexal Social</title><script type="module" src="index.js"></script></head><body><div id="app"></div></body></html>' > dist/index.html
-          fi
-
-      - name: Initialize Capacitor Android Platform
+      - name: Initialize Capacitor
         run: |
           npx cap init "Lexal Social" "com.lexalsocial.app" --web-dir=dist
           npx cap add android
 
-      - name: Sync Web Code to Android Native Project
-        run: |
-          mkdir -p android/app/src/main/assets
-          echo '[]' > android/app/src/main/assets/capacitor.plugins.json
-          npx cap sync android
+      - name: Sync Code to Android
+        run: npx cap sync android
 
-      # ডুপ্লিকেট কোটলিন ক্লাস সংঘাতের মূল সমাধান (Exclude & Resolution Strategy)
       - name: Inject Strict Gradle Duplicate Fixes
         run: |
           cd android
-          
-          # ১. অ্যাপ লেভেলের build.gradle ফাইলে packagingOptions এক্সক্লুড রুলস যুক্ত করা
           sed -i '/android {/a \    packagingOptions {\n        resources {\n            excludes += ["META-INF/*.kotlin_module", "META-INF/kotlin-stdlib-jdk7.kotlin_module", "META-INF/kotlin-stdlib-jdk8.kotlin_module", "META-INF/kotlin-stdlib.kotlin_module"]\n        }\n    }' app/build.gradle
-          
-          # ২. রুট লেভেলের build.gradle ফাইলে অল-প্রজেক্ট রেজোলিউশন স্ট্র্যাটেজি ফোর্স করা
           echo "subprojects { project -> if (project.hasProperty('android')) { android { packagingOptions { resources { excludes += ['META-INF/搶otlin_module', 'META-INF/*'] } } } } }" >> build.gradle
           echo "allprojects { configurations.all { resolutionStrategy { eachDependency { details -> if (details.requested.group == 'org.jetbrains.kotlin') { details.useVersion '1.8.22' } } } } }" >> build.gradle
 
@@ -74,7 +58,7 @@ jobs:
           ./gradlew clean
           ./gradlew assembleDebug --no-daemon
 
-      - name: Upload Generated APK to GitHub Artifacts
+      - name: Upload Generated APK
         uses: actions/upload-artifact@v4
         with:
           name: Lexal-Social-Debug-APK
