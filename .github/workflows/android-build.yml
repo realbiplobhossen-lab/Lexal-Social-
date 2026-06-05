@@ -56,19 +56,25 @@ jobs:
           echo '[]' > android/app/src/main/assets/capacitor.plugins.json
           npx cap sync android
 
-      # ডুপ্লিকেট কোটলিন ক্লাসের এরর এড়াতে গ্রেডল কনফিগারেশনে বাধ্য করা হচ্ছে
-      - name: Fix Duplicate Kotlin Dependencies
+      # ডুপ্লিকেট কোটলিন ক্লাস এবং মেটা-ডাটা সংঘাত দূর করার চূড়ান্ত কনফিগারেশন
+      - name: Fix Android Gradle Properties & Build Config
         run: |
           cd android
-          echo "configurations.all { resolutionStrategy { eachDependency { DependencyResolveDetails details -> if (details.requested.group == 'org.jetbrains.kotlin') { details.useVersion '1.8.22' } } } }" >> build.gradle
+          # ডুপ্লিকেট স্টুডিও ক্যাশ ও জেটপায়ার এনেবল করা
+          echo "android.useAndroidX=true" >> gradle.properties
+          echo "android.enableJetifier=true" >> gradle.properties
+          
+          # অ্যাপ লেভেলের build.gradle ফাইলে এক্সক্লুড রুলস যুক্ত করা
+          sed -i '/android {/a \    packagingOptions {\n        resources {\n            excludes += ["META-INF/*.kotlin_module", "META-INF/packages_debug_release.kotlin_module"]\n        }\n    }' app/build.gradle
+          
+          # কনফিগারেশন স্ট্র্যাটেজি সেট করা যাতে ডুপ্লিকেট কোটলিন লাইব্রেরি ফোর্সড-ফিক্স হয়
+          echo "subprojects { project -> if (project.hasProperty('android')) { android { packagingOptions { resources { excludes += ['META-INF/搶otlin_module'] } } } } }" >> build.gradle
 
-      # ডুপ্লিকেট ক্যাশ বা ক্লাস এড়াতে প্রথমে গ্রেডল প্রজেক্টটি ক্লিন করা হচ্ছে এবং তারপর বিল্ড চালানো হচ্ছে
       - name: Build Android Debug APK
         run: |
           cd android
           ./gradlew clean
           ./gradlew assembleDebug --no-daemon
-          
 
       - name: Upload Generated APK to GitHub Artifacts
         uses: actions/upload-artifact@v4
