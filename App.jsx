@@ -1,61 +1,53 @@
-import React, { useState, useEffect } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./config/firebase";
-import LoginScreen from "./screens/LoginScreen";
-import RegisterScreen from "./screens/RegisterScreen";
-import HomeScreen from "./screens/HomeScreen";
-import CreatePostScreen from "./screens/CreatePostScreen";
-import ProfileScreen from "./screens/ProfileScreen";
-import Navbar from "./components/Navbar";
-import BottomNav from "./components/BottomNav";
-import "./styles/global.css";
+import React, { useState, useEffect } from 'react';
+// ইমপোর্ট পাথ সরাসরি রুট ডিরেক্টরির firebase.js ফাইলের সাথে লিংক করা হলো
+import { auth } from './firebase'; 
+import { onAuthStateChanged } from 'firebase/auth';
+import Navbar from './Navbar';
+import BottomNav from './BottomNav';
 
-export default function App() {
+function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState("home");
-  const [authView, setAuthView] = useState("login"); // 'login' বা 'register' ট্র্যাকিং এর জন্য
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
       setLoading(false);
     });
     return () => unsubscribe();
   }, []);
 
   if (loading) {
-    return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", color: "white" }}>Loading Lexal Social...</div>;
-  }
-
-  // ইউজার অথেন্টিকেটেড না থাকলে লগইন অথবা রেজিস্টার স্ক্রিন দেখাবে
-  if (!user) {
-    return authView === "login" ? (
-      <div>
-        <LoginScreen setPage={setPage} />
-        <p style={{ textAlign: "center", color: "#3b82f6", cursor: "pointer" }} onClick={() => setAuthView("register")}>
-          Don't have an account? Register here.
-        </p>
-      </div>
-    ) : (
-      <div>
-        <RegisterScreen setPage={setPage} />
-        <p style={{ textAlign: "center", color: "#3b82f6", cursor: "pointer" }} onClick={() => setAuthView("login")}>
-          Already have an account? Login here.
-        </p>
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#121212', color: '#fff' }}>
+        <h2>Loading Lexal Social...</h2>
       </div>
     );
   }
 
   return (
-    <>
-      <Navbar />
-      <div className="page">
-        {page === "home" && <HomeScreen />}
-        {page === "create" && <CreatePostScreen setPage={setPage} />}
-        {page === "profile" && <ProfileScreen />}
-      </div>
-      <BottomNav setPage={setPage} currentPage={page} />
-    </>
+    <div className="app-container" style={{ background: '#121212', color: '#fff', minHeight: '100vh', paddingBottom: '60px' }}>
+      <Navbar user={user} />
+      
+      <main style={{ padding: '20px' }}>
+        {user ? (
+          <div className="feed-section">
+            <h1>Welcome to Lexal Social Feed</h1>
+            <p>Hello, {user.displayName || user.email}! You are successfully logged in.</p>
+            {/* আপনার ফিড বা অন্যান্য কম্পোনেন্ট এখানে যুক্ত থাকবে */}
+          </div>
+        ) : (
+          <div className="auth-section" style={{ textAlign: 'center', marginTop: '50px' }}>
+            <h1>Connect with the World</h1>
+            <p>Please log in or sign up to join the popular Lexal Social platform.</p>
+            {/* আপনার লগইন/সাইনআপ কম্পোনেন্ট এখানে থাকবে */}
+          </div>
+        )}
+      </main>
+
+      <BottomNav />
+    </div>
   );
 }
+
+export default App;
