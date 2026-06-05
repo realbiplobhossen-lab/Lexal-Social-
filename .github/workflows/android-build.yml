@@ -22,7 +22,6 @@ jobs:
           node-cache: 'npm'
           node-version: 20
 
-      # এখানে জাভা ভার্সন ১৭ থেকে বাড়িয়ে ২১ করা হলো, যা আপনার এররটি ফিক্স করবে
       - name: Install Java (Required for Android Build)
         uses: actions/setup-java@v3
         with:
@@ -57,10 +56,19 @@ jobs:
           echo '[]' > android/app/src/main/assets/capacitor.plugins.json
           npx cap sync android
 
+      # ডুপ্লিকেট কোটলিন ক্লাসের এরর এড়াতে গ্রেডল কনফিগারেশনে বাধ্য করা হচ্ছে
+      - name: Fix Duplicate Kotlin Dependencies
+        run: |
+          cd android
+          echo "configurations.all { resolutionStrategy { eachDependency { DependencyResolveDetails details -> if (details.requested.group == 'org.jetbrains.kotlin') { details.useVersion '1.8.22' } } } }" >> build.gradle
+
+      # ডুপ্লিকেট ক্যাশ বা ক্লাস এড়াতে প্রথমে গ্রেডল প্রজেক্টটি ক্লিন করা হচ্ছে এবং তারপর বিল্ড চালানো হচ্ছে
       - name: Build Android Debug APK
         run: |
           cd android
-          ./gradlew assembleDebug
+          ./gradlew clean
+          ./gradlew assembleDebug --no-daemon
+          
 
       - name: Upload Generated APK to GitHub Artifacts
         uses: actions/upload-artifact@v4
