@@ -1,32 +1,26 @@
-import React from "react";
+import React from 'react';
 
-export default function BottomNav({ setPage, currentPage }) {
+function BottomNav({ activeScreen, setActiveScreen }) {
+  const menus = [
+    { id: 'home', label: '🏠 ফিড' },
+    { id: 'search', label: '🔍 সার্চ' },
+    { id: 'create', label: '➕ পোস্ট' },
+    { id: 'chat', label: '💬 মেসেজ' },
+    { id: 'profile', label: '👤 প্রোফাইল' }
+  ];
+
   return (
-    <div className="bottom-nav" style={styles.navContainer}>
-      <button 
-        onClick={() => setPage("home")} 
-        style={currentPage === "home" ? styles.activeBtn : styles.btn}
-      >
-        Home
-      </button>
-      <button 
-        onClick={() => setPage("create")} 
-        style={currentPage === "create" ? styles.activeBtn : styles.btn}
-      >
-        Create
-      </button>
-      <button 
-        onClick={() => setPage("profile")} 
-        style={currentPage === "profile" ? styles.activeBtn : styles.btn}
-      >
-        Profile
-      </button>
-    </div>
+    <nav className="lexal-bottom-nav">
+      {menus.map(m => (
+        <button 
+          key={m.id} 
+          onClick={() => setActiveScreen(m.id)}
+          className={`nav-btn ${activeScreen === m.id ? 'active' : ''}`}
+        >
+          {m.label}
+        </button>
+      ))}
+    </nav>
   );
 }
-
-const styles = {
-  navContainer: { display: "flex", justifyContent: "space-around", padding: "10px", background: "#eee", position: "fixed", bottom: 0, width: "100%" },
-  btn: { padding: "10px", background: "none", border: "none", cursor: "pointer" },
-  activeBtn: { padding: "10px", background: "none", border: "none", fontWeight: "bold", color: "#007bff", cursor: "pointer" }
-};
+export default BottomNav;
