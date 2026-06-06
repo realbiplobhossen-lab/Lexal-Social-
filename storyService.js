@@ -1,11 +1,21 @@
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { db } from "../config/firebase";
+import { db } from '../config/firebase';
+import { collection, addDoc, onSnapshot, query, where } from 'firebase/firestore';
 
-export async function createStory(uid, media) {
-  await addDoc(collection(db, "stories"), {
-    uid,
-    media,
-    createdAt: serverTimestamp(),
-    expiresAt: Date.now() + 86400000 // ২৪ ঘণ্টা পর এক্সপায়ার হবে
-  });
-}
+export const storyService = {
+  uploadStory: async (userId, userName, mediaUrl) => {
+    await addDoc(collection(db, "stories"), {
+      uid: userId,
+      author: userName,
+      mediaUrl: mediaUrl,
+      createdAt: Date.now()
+    });
+  },
+  listenActiveStories: (callback) => {
+    const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+    const q = query(collection(db, "stories"), where("createdAt", ">", oneDayAgo));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(d => d.data()));
+    });
+  }
+};
+
