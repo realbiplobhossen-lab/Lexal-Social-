@@ -1,18 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
-import { db } from "../config/firebase";
+import React from 'react';
 
-export default function PostCounter() {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    const q = query(collection(db, "posts"), where("hidden", "==", false));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setCount(snapshot.size);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  return <h3>Total Active Posts: {count}</h3>;
+function PostCounter({ likesCount, sharesCount }) {
+  return (
+    <div className="post-counter" style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', fontSize: '12px', color: '#9CA3AF' }}>
+      <span>👍 {likesCount} জন পছন্দ করেছেন</span>
+      <span>🔄 {sharesCount} বার শেয়ার হয়েছে</span>
+    </div>
+  );
 }
+export default PostCounter;
