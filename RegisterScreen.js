@@ -1,35 +1,31 @@
-import React, { useState } from "react";
-import { registerUser } from "../services/authService";
+import React, { useState } from 'react';
+import { authService } from '../services/authService';
 
-export default function RegisterScreen({ setPage }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+function RegisterScreen({ setAuthView }) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [pass, setPass] = useState('');
 
-  const handleRegister = async () => {
-    if (!name || !email || !password) return alert("Fill all fields");
+  const handleRegister = async (e) => {
+    e.preventDefault();
     try {
-      setLoading(true);
-      await registerUser(name, email, password);
-      alert("Registration Success");
-      if (setPage) setPage("home");
-    } catch (error) {
-      alert(error.message);
-    } finally {
-      setLoading(false);
-    }
+      await authService.register(name, email, pass);
+      alert("অ্যাকাউন্ট তৈরি সফল!");
+      setAuthView('login');
+    } catch (err) { alert(err.message); }
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Create Account</h2>
-      <input placeholder="Name" onChange={(e) => setName(e.target.value)} style={{ display: "block", margin: "10px 0", padding: "8px" }} />
-      <input placeholder="Email" type="email" onChange={(e) => setEmail(e.target.value)} style={{ display: "block", margin: "10px 0", padding: "8px" }} />
-      <input type="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)} style={{ display: "block", margin: "10px 0", padding: "8px" }} />
-      <button onClick={handleRegister} disabled={loading}>
-        {loading ? "Registering..." : "Register"}
-      </button>
+    <div className="auth-card">
+      <h2>Lexal Social - রেজিস্ট্রেশন</h2>
+      <form onSubmit={handleRegister}>
+        <input type="text" placeholder="পূর্ণ নাম" onChange={e=>setName(e.target.value)} required />
+        <input type="email" placeholder="ইমেইল" onChange={e=>setEmail(e.target.value)} required />
+        <input type="password" placeholder="পাসওয়ার্ড" onChange={e=>setPass(e.target.value)} required />
+        <button type="submit">নিবন্ধন করুন</button>
+      </form>
+      <span onClick={() => setAuthView('login')} className="auth-toggle-link">ইতিমধ্যে অ্যাকাউন্ট আছে? লগইন</span>
     </div>
   );
 }
+export default RegisterScreen;
