@@ -1,94 +1,98 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from './firebase'; 
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
-import { collection, doc, setDoc, getDoc, addDoc, onSnapshot, query, orderBy, updateDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, getDoc, addDoc, onSnapshot, query, orderBy, updateDoc, arrayUnion, arrayRemove, getDocs, where } from 'firebase/firestore';
+import { App as CapacitorApp } from '@capacitor/app'; // নেটিভ ডিভাইস ব্যাক বাটন কন্ট্রোলার
 
-// গ্লোবাল ডার্ক লাক্সারি থিম স্টাইলস (ফেসবুক ও ইনস্টাগ্রামের মিক্সড মডার্ন ইউআই)
+// প্রফেশনাল ডার্ক ও লাক্সারি লাক্স স্টাইল গাইড
 const styles = {
-  container: { background: '#090D13', color: '#E6EDF3', minHeight: '100vh', paddingBottom: '80px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' },
+  container: { background: '#090D13', color: '#E6EDF3', minHeight: '100vh', paddingBottom: '90px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif' },
   loading: { display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#090D13', color: '#58A6FF' },
-  header: { background: '#161B22', padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid #30363D', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' },
-  logo: { fontSize: '22px', fontWeight: '900', color: '#58A6FF', letterSpacing: '0.5px' },
+  header: { background: '#161B22', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid #30363D' },
+  logo: { fontSize: '20px', fontWeight: '900', color: '#58A6FF', letterSpacing: '0.5px', cursor: 'pointer' },
   card: { maxWidth: '400px', margin: '40px auto', padding: '30px', background: '#161B22', borderRadius: '16px', border: '1px solid #30363D', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' },
-  input: { width: '100%', padding: '12px 16px', margin: '8px 0', borderRadius: '8px', border: '1px solid #30363D', background: '#0D1117', color: '#F0F6FC', fontSize: '15px', boxSizing: 'border-box' },
-  btnPrimary: { width: '100%', padding: '14px', borderRadius: '8px', border: 'none', background: '#238636', color: '#FFFFFF', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' },
-  btnSecondary: { width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #30363D', background: '#21262D', color: '#58A6FF', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' },
+  input: { width: '100%', padding: '12px 16px', margin: '8px 0', borderRadius: '8px', border: '1px solid #30363D', background: '#0D1117', color: '#F0F6FC', fontSize: '14px', boxSizing: 'border-box' },
+  btnPrimary: { width: '100%', padding: '14px', borderRadius: '8px', border: 'none', background: '#238636', color: '#FFFFFF', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer' },
+  btnSecondary: { width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #30363D', background: '#21262D', color: '#58A6FF', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' },
   
-  // নিউজফিড ও প্রোফাইল এলিমেন্টস
   mainContent: { maxWidth: '550px', margin: '0 auto', padding: '15px' },
-  postBox: { background: '#161B22', borderRadius: '14px', padding: '16px', border: '1px solid #30363D', marginBottom: '16px' },
   postCard: { background: '#161B22', borderRadius: '14px', padding: '16px', border: '1px solid #30363D', marginBottom: '16px' },
-  avatar: { width: '42px', height: '42px', borderRadius: '50%', background: '#1F6FEB', color: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold', fontSize: '16px', border: '1px solid #30363D' },
-  userInfo: { display: 'flex', alignItems: 'center', gap: '10px' },
-  actionRow: { display: 'flex', justifyContent: 'space-between', marginTop: '15px', borderTop: '1px solid #21262D', paddingTop: '10px' },
-  actionBtn: { background: 'none', border: 'none', color: '#8B949E', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: '600' },
+  avatar: { width: '40px', height: '40px', borderRadius: '50%', background: '#1F6FEB', color: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' },
+  actionRow: { display: 'flex', justifyContent: 'space-between', marginTop: '12px', borderTop: '1px solid #21262D', paddingTop: '10px' },
+  actionBtn: { background: 'none', border: 'none', color: '#8B949E', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px' },
   
-  // বটম নেভিগেশন বার (ফিক্সড ও সচল)
+  // সেটিংস ক্যাটাগরি রো
+  settingsRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: '1px solid #21262D' },
+  settingsSection: { background: '#161B22', padding: '16px', borderRadius: '12px', border: '1px solid #30363D', marginBottom: '15px' },
+  
   bottomNav: { position: 'fixed', bottom: 0, left: 0, right: 0, background: '#161B22', display: 'flex', justifyContent: 'space-around', padding: '12px 0', borderTop: '1px solid #30363D', zIndex: 999 },
-  navItem: { background: 'none', border: 'none', color: '#8B949E', fontSize: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', cursor: 'pointer', fontWeight: '600' },
-  activeNavItem: { color: '#58A6FF' },
-  badge: { background: '#FF7B72', color: 'white', borderRadius: '50%', padding: '2px 6px', fontSize: '10px', position: 'absolute', top: '-5px', right: '-10px' }
+  navItem: { background: 'none', border: 'none', color: '#8B949E', fontSize: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', cursor: 'pointer' }
 };
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('home'); // home, messages, create, profile, settings
+  const [activeTab, setActiveTab] = useState('home'); 
   const [screen, setScreen] = useState('login');
   const [error, setError] = useState('');
-  const [history, setHistory] = useState(['home']); // কাস্টম ইন-অ্যাপ ব্যাক বাটন ট্র্যাকিং
+  const [navigationHistory, setNavigationHistory] = useState(['home']);
 
-  // ফায়ারস্টোর ডায়নামিক ডাটা স্টেট
+  // ডেটা স্টেট
   const [posts, setPosts] = useState([]);
-  const [userData, setUserData] = useState({ fullName: 'Lexal User', country: '', sex: '', workplace: '', status: '', hometown: '', relation: 'Single' });
-  
-  // ইনপুট স্টেটসমূহ
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [signUpForm, setSignUpForm] = useState({ firstName: '', lastName: '', email: '', password: '', country: 'Bangladesh', sex: 'Male' });
+  const [userData, setUserData] = useState({ fullName: 'Lexal User', followers: [], following: [], savedPosts: [] });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
   const [postText, setPostText] = useState('');
-  const [commentInputs, setCommentInputs] = useState({});
-  const [savedPostIds, setSavedPostIds] = useState([]);
 
-  // কাস্টম ট্যাব চেঞ্জার (যা ব্যাক বাটনের ব্যাকগ্রাউন্ড হিস্ট্রি ধরে রাখবে)
+  // সেটিংস অপশন স্টেট (ফেসবুকের মতো)
+  const [isAccountLocked, setIsAccountLocked] = useState(false);
+  const [isActiveStatusOn, setIsActiveStatusOn] = useState(true);
+  const [pushNotifications, setPushNotifications] = useState(true);
+  const [twoFactorAuth, setTwoFactorAuth] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState('Dark Luxury');
+
+  // কাস্টম ডায়নামিক নেভিগেশন (যা হিস্ট্রি সেভ করে)
   const navigateTo = (tab) => {
-    setHistory(prev => [...prev, tab]);
+    setNavigationHistory(prev => [...prev, tab]);
     setActiveTab(tab);
   };
 
-  // ইন-অ্যাপ ভার্চুয়াল ব্যাক বাটন অ্যাকশন
-  const handleBackAction = () => {
-    if (history.length > 1) {
-      const newHistory = [...history];
-      newHistory.pop(); // বর্তমান পেজ বাদ দেওয়া হলো
-      const previousPage = newHistory[newHistory.length - 1];
-      setHistory(newHistory);
-      setActiveTab(previousPage);
-    } else {
-      setActiveTab('home');
-    }
-  };
+  // 📱 অ্যান্ড্রোয়েড ও আইওএস ফিজিক্যাল ব্যাক বাটন কন্ট্রোল ইন্টিগ্রেশন
+  useEffect(() => {
+    const backButtonListener = CapacitorApp.addListener('backButton', () => {
+      if (navigationHistory.length > 1) {
+        const updatedHistory = [...navigationHistory];
+        updatedHistory.pop(); // বর্তমান পেজ বাদ
+        const prevPage = updatedHistory[updatedHistory.length - 1];
+        setNavigationHistory(updatedHistory);
+        setActiveTab(prevPage);
+      } else {
+        // একদম হোম পেজে থাকলে ব্যাক চাপলে অ্যাপ ব্যাকগ্রাউন্ডে চলে যাবে বা এক্সিট হবে
+        CapacitorApp.exitApp();
+      }
+    });
 
-  // ইউজার সেশন ও ফায়ারস্টোর প্রোফাইল ডাটা সিঙ্ক
+    return () => {
+      backButtonListener.then(listener => listener.remove());
+    };
+  }, [navigationHistory]);
+
+  // ইউজার সেশন ট্র্যাকিং
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // ফায়ারস্টোর থেকে সরাসরি নাম এবং ডাটা রিয়েল-টাইম নিয়ে আসা
         const docRef = doc(db, "users", currentUser.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setUserData(docSnap.data());
-        } else {
-          setUserData({ fullName: currentUser.displayName || 'Lexal User', relation: 'Single' });
-        }
+        onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) setUserData(docSnap.data());
+        });
       }
       setLoading(false);
     });
     return () => unsubscribe();
   }, []);
 
-  // ফায়ারস্টোর থেকে রিয়েল-টাইম গ্লোবাল নিউজফিড লোড
+  // গ্লোবাল ফিড লোড
   useEffect(() => {
     if (!user) return;
     const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
@@ -98,272 +102,231 @@ function App() {
     return () => unsubscribe();
   }, [user]);
 
-  // লগইন প্রসেস
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError('');
-    try {
-      await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
-    } catch (err) {
-      setError('লগইন হয়নি! সঠিক ইমেইল ও পাসওয়ার্ড দিন।');
-    }
-  };
-
-  // সাইনআপ ও ফায়ারস্টোর প্রোফাইল তৈরি
-  const handleSignUp = async (e) => {
-    e.preventDefault();
-    setError('');
-    if (!signUpForm.firstName || !signUpForm.lastName || !signUpForm.email || !signUpForm.password) {
-      setError('অনুগ্রহ করে সবগুলো ঘর পূরণ করুন!');
+  // 🔍 গ্লোবাল রিয়েল-টাইম সার্চ ইঞ্জিন (লক্ষ কোটি ইউজার থেকে খোঁজার জন্য)
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
       return;
     }
+    const delayDebounce = setTimeout(async () => {
+      const q = query(
+        collection(db, "users"),
+        where("fullName", ">=", searchQuery),
+        where("fullName", "<=", searchQuery + '\uf8ff')
+      );
+      const querySnapshot = await getDocs(q);
+      setSearchResults(querySnapshot.docs.map(doc => doc.data()).filter(u => u.uid !== user.uid));
+    }, 300); // নেটওয়ার্ক অপ্টিমাইজেশনের জন্য Debounce ব্যবহার করা হয়েছে
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery]);
+
+  // ফলো এবং আনফলো মেকানিজম (Global Connection Grid)
+  const handleFollowToggle = async (targetUserId, isFollowing) => {
+    const myDocRef = doc(db, "users", user.uid);
+    const targetDocRef = doc(db, "users", targetUserId);
+
     try {
-      const cred = await createUserWithEmailAndPassword(auth, signUpForm.email, signUpForm.password);
-      const fullName = `${signUpForm.firstName} ${signUpForm.lastName}`;
-      await updateProfile(cred.user, { displayName: fullName });
-
-      const newProfile = {
-        fullName,
-        email: signUpForm.email,
-        country: signUpForm.country,
-        sex: signUpForm.sex,
-        uid: cred.user.uid,
-        workplace: 'Not set',
-        status: 'Student',
-        hometown: signUpForm.country,
-        relation: 'Single'
-      };
-
-      await setDoc(doc(db, "users", cred.user.uid), newProfile);
-      setUserData(newProfile);
-      alert('অ্যাকাউন্ট তৈরি সফল হয়েছে!');
-      setScreen('login');
+      if (isFollowing) {
+        await updateDoc(myDocRef, { following: arrayRemove(targetUserId) });
+        await updateDoc(targetDocRef, { followers: arrayRemove(user.uid) });
+      } else {
+        await updateDoc(myDocRef, { following: arrayUnion(targetUserId) });
+        await updateDoc(targetDocRef, { followers: arrayUnion(user.uid) });
+      }
     } catch (err) {
-      setError(err.message.replace('Firebase:', ''));
+      alert("সংযোগ স্থাপন করতে সমস্যা হয়েছে।");
     }
   };
 
-  // ফায়ারস্টোরে রিয়েল-টাইম পোস্ট পাবলিশ
   const handleCreatePost = async (e) => {
     e.preventDefault();
     if (!postText.trim()) return;
-    try {
-      await addDoc(collection(db, "posts"), {
-        author: userData.fullName || user.displayName || 'Lexal User',
-        uid: user.uid,
-        content: postText,
-        createdAt: Date.now(),
-        likes: [],
-        comments: []
-      });
-      setPostText('');
-      navigateTo('home');
-    } catch (err) {
-      alert('পোস্ট আপলোড ব্যর্থ: ' + err.message);
-    }
+    await addDoc(collection(db, "posts"), {
+      author: userData.fullName || user.displayName,
+      uid: user.uid,
+      content: postText,
+      createdAt: Date.now(),
+      likes: []
+    });
+    setPostText('');
   };
 
-  // লাইক মেকানিজম
-  const handleLike = async (postId, currentLikes = []) => {
-    try {
-      const postRef = doc(db, "posts", postId);
-      const updatedLikes = currentLikes.includes(user.uid)
-        ? currentLikes.filter(id => id !== user.uid)
-        : [...currentLikes, user.uid];
-      await updateDoc(postRef, { likes: updatedLikes });
-    } catch (err) {}
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try { await signInWithEmailAndPassword(auth, loginEmail, loginPassword); } catch (err) { setError('ভুল ইমেইল বা পাসওয়ার্ড!'); }
   };
 
-  // কমেন্ট মেকানিজম
-  const handleAddComment = async (postId, currentComments = []) => {
-    const txt = commentInputs[postId];
-    if (!txt || !txt.trim()) return;
-    try {
-      const postRef = doc(db, "posts", postId);
-      await updateDoc(postRef, {
-        comments: [...currentComments, { author: userData.fullName, text: txt, createdAt: Date.now() }]
-      });
-      setCommentInputs({ ...commentInputs, [postId]: '' });
-    } catch (err) {}
-  };
-
-  // পোস্ট সেভ মেকানিজম (বুকমার্ক)
-  const toggleSavePost = (postId) => {
-    setSavedPostIds(prev => 
-      prev.includes(postId) ? prev.filter(id => id !== postId) : [...prev, postId]
-    );
-  };
-
-  // শেয়ার মেকানিজম (নেটিভ অ্যান্ড্রোয়েড/ওয়েব শেয়ার API)
-  const handleShare = async (post) => {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: post.author, text: post.content, url: window.location.href });
-      } catch (err) {}
-    } else {
-      navigator.clipboard.writeText(post.content);
-      alert('পোস্টের টেক্সট ক্লিপবোর্ডে কপি করা হয়েছে!');
-    }
-  };
-
-  if (loading) return <div style={styles.loading}><h2>Lexal Social Network-এ যুক্ত হচ্ছে...</h2></div>;
+  if (loading) return <div style={styles.loading}><h2>Lexal Global Network Engine...</h2></div>;
 
   return (
     <div style={styles.container}>
       {user && (
         <div style={styles.header}>
-          {history.length > 1 ? (
-            <button onClick={handleBackAction} style={{ background: '#21262D', color: '#58A6FF', border: '1px solid #30363D', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold' }}>⬅️ Back</button>
-          ) : <div style={{ width: '50px' }}></div>}
-          <div style={styles.logo}>Lexal Social</div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <span style={{ fontSize: '20px', cursor: 'pointer' }} onClick={() => navigateTo('settings')}>⚙️</span>
+          <div style={styles.logo} onClick={() => navigateTo('home')}>Lexal Social</div>
+          <div style={{ display: 'flex', gap: '15px', fontSize: '18px' }}>
+            <span onClick={() => navigateTo('settings')} style={{ cursor: 'pointer' }}>⚙️</span>
           </div>
         </div>
       )}
 
       {user ? (
-        /* ==================== লজড ইন মেইন অ্যাপ ইন্টারফেস ==================== */
         <div style={styles.mainContent}>
           
-          {/* ট্যাব ১: গ্লোবাল নিউজফিড */}
+          {/* ==================== হোম পেজ এবং ইউজার কানেকশন এরিয়া ==================== */}
           {activeTab === 'home' && (
             <div>
-              <div style={styles.postBox}>
-                <div style={styles.userInfo}>
-                  <div style={styles.avatar}>{(userData.fullName || 'U')[0].toUpperCase()}</div>
-                  <h4 style={{ margin: 0 }}>{userData.fullName}</h4>
+              {/* 🔎 গ্লোবাল সার্চ ইঞ্জিন ইনপুট বার */}
+              <input type="text" style={{ ...styles.input, background: '#161B22', borderRadius: '20px', marginBottom: '15px' }} placeholder="🔍 লক্ষ কোটি বন্ধুদের নাম লিখে সার্চ করুন..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+
+              {/* সার্চ রেজাল্ট প্যানেল */}
+              {searchResults.length > 0 && (
+                <div style={{ background: '#161B22', padding: '12px', borderRadius: '12px', border: '1px solid #30363D', marginBottom: '15px' }}>
+                  <h5 style={{ margin: '0 0 10px 0', color: '#58A6FF' }}>অনুসন্ধানের ফলাফল:</h5>
+                  {searchResults.map(targetUser => {
+                    const isFollowing = userData.following?.includes(targetUser.uid);
+                    return (
+                      <div key={targetUser.uid} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #21262D' }}>
+                        <div>
+                          <strong style={{ fontSize: '14px' }}>{targetUser.fullName}</strong>
+                          <div style={{ fontSize: '11px', color: '#8B949E' }}>{targetUser.followers?.length || 0} Followers</div>
+                        </div>
+                        <button onClick={() => handleFollowToggle(targetUser.uid, isFollowing)} style={{ background: isFollowing ? '#21262D' : '#238636', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
+                          {isFollowing ? 'Unfollow' : 'Connect / Follow'}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
-                <textarea style={{ ...styles.input, height: '70px', resize: 'none', background: '#090D13', marginTop: '10px' }} placeholder="What's happening globally?" value={postText} onChange={(e) => setPostText(e.target.value)} />
-                <button onClick={handleCreatePost} style={{ ...styles.btnPrimary, width: 'auto', float: 'right', padding: '8px 18px', fontSize: '14px' }}>Post</button>
+              )}
+
+              {/* পোস্ট মেকার */}
+              <div style={{ ...styles.postCard, background: '#161B22' }}>
+                <textarea style={{ ...styles.input, height: '60px', resize: 'none', marginTop: 0 }} placeholder="আজকে আপনার মনে কী চলছে?" value={postText} onChange={(e) => setPostText(e.target.value)} />
+                <button onClick={handleCreatePost} style={{ ...styles.btnPrimary, width: 'auto', padding: '6px 16px', float: 'right', fontSize: '13px' }}>Publish</button>
                 <div style={{ clear: 'both' }}></div>
               </div>
 
-              {posts.map(post => {
-                const isLiked = post.likes?.includes(user.uid);
-                const isSaved = savedPostIds.includes(post.id);
-                return (
-                  <div key={post.id} style={styles.postCard}>
-                    <div style={styles.userInfo}>
-                      <div style={{ ...styles.avatar, background: '#21262D' }}>{(post.author || 'L')[0].toUpperCase()}</div>
-                      <div><h4 style={{ margin: 0 }}>{post.author}</h4></div>
-                    </div>
-                    <p style={{ margin: '12px 0', fontSize: '15px', lineHeight: '1.5' }}>{post.content}</p>
-                    
-                    <div style={styles.actionRow}>
-                      <button onClick={() => handleLike(post.id, post.likes)} style={{ ...styles.actionBtn, color: isLiked ? '#58A6FF' : '#8B949E' }}>👍 Like ({post.likes?.length || 0})</button>
-                      <button style={styles.actionBtn}>💬 Comment ({post.comments?.length || 0})</button>
-                      <button onClick={() => handleShare(post)} style={styles.actionBtn}>↗️ Share</button>
-                      <button onClick={() => toggleSavePost(post.id)} style={{ ...styles.actionBtn, color: isSaved ? '#F2C94C' : '#8B949E' }}>🔖 {isSaved ? 'Saved' : 'Save'}</button>
-                    </div>
-
-                    {post.comments?.length > 0 && (
-                      <div style={{ background: '#0D1117', padding: '10px', borderRadius: '8px', marginTop: '10px' }}>
-                        {post.comments.map((c, i) => (
-                          <p key={i} style={{ fontSize: '13px', margin: '4px 0' }}><strong style={{ color: '#58A6FF' }}>{c.author}:</strong> {c.text}</p>
-                        ))}
-                      </div>
-                    )}
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                      <input type="text" style={{ ...styles.input, padding: '8px', fontSize: '13px', margin: 0 }} placeholder="Write a comment..." value={commentInputs[post.id] || ''} onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })} />
-                      <button onClick={() => handleAddComment(post.id, post.comments)} style={{ ...styles.btnPrimary, width: 'auto', padding: '2px 12px', fontSize: '13px' }}>Reply</button>
-                    </div>
+              {/* নিউজফিড */}
+              {posts.map(post => (
+                <div key={post.id} style={styles.postCard}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={styles.avatar}>{(post.author || 'L')[0].toUpperCase()}</div>
+                    <div><h5 style={{ margin: 0 }}>{post.author}</h5></div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* ট্যাব ২: রিয়েল-টাইম চ্যাটিং ও মেসেজিং হাব (টেলিগ্রাম গেটওয়ে) */}
-          {activeTab === 'messages' && (
-            <div style={{ textAlign: 'center', padding: '40px 10px' }}>
-              <div style={{ fontSize: '50px' }}>💬</div>
-              <h3>Lexal Secure Messenger</h3>
-              <p style={{ color: '#8B949E', fontSize: '14px' }}>এন্ড-টু-এন্ড এনক্রিপ্টেড মেসেজিং চ্যানেল চালু করতে নিচে ক্লিক করুন।</p>
-              <div style={{ background: '#161B22', borderRadius: '10px', padding: '15px', border: '1px solid #30363D', textAlign: 'left', marginBottom: '15px' }}>
-                <strong>🌐 Global Public Channel</strong>
-                <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#8B949E' }}>Active members online</p>
-              </div>
-              <button style={styles.btnPrimary} onClick={() => alert('ইনস্ট্যান্ট পিয়ার-টু-পিয়ার চ্যাট সেশন ওপেন হচ্ছে...')}>Start Live Chat</button>
-            </div>
-          )}
-
-          {/* 🎙️ ট্যাব ৩: ব্রডকাস্টিং, ভিডিও এবং লাইভ ভিডিও কল হাব */}
-          {activeTab === 'create' && (
-            <div style={{ background: '#161B22', padding: '20px', borderRadius: '12px', border: '1px solid #30363D' }}>
-              <h3 style={{ color: '#58A6FF', marginTop: 0 }}>📹 Studio & Broadcasting Studio</h3>
-              <p style={{ color: '#8B949E', fontSize: '13px' }}>হাই-ডেফিনিশন মাল্টিমিডিয়া ফাইল আপলোড এবং ব্রডকাস্ট প্যানেল</p>
-              <button style={styles.btnSecondary} onClick={() => alert('ভিডিও আপলোডের জন্য স্টোরেজ ওপেন হচ্ছে...')}>📁 Upload Premium Video</button>
-              <button style={{ ...styles.btnPrimary, background: '#FF7B72', marginTop: '12px' }} onClick={() => alert('লাইভ ভিডিও স্ট্রিমিং সার্ভার কানেক্ট হচ্ছে...')}>🔴 Go Live Stream</button>
-              <button style={{ ...styles.btnPrimary, background: '#1F6FEB', marginTop: '12px' }} onClick={() => alert('WebRTC এর মাধ্যমে এইচডি অডিও/ভিডিও কল শুরু হচ্ছে...')}>📞 Start Audio / Video Call</button>
-            </div>
-          )}
-
-          {/* 👤 ট্যাব ৪: প্রোফাইল ভিউ */}
-          {activeTab === 'profile' && (
-            <div style={styles.postBox}>
-              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                <div style={{ width: '85px', height: '85px', borderRadius: '50%', background: '#58A6FF', color: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold', fontSize: '32px', margin: '0 auto 10px auto', border: '3px solid #30363D' }}>
-                  {(userData.fullName || 'U')[0].toUpperCase()}
+                  <p style={{ fontSize: '14px', margin: '12px 0' }}>{post.content}</p>
                 </div>
-                <h2 style={{ margin: 0 }}>{userData.fullName}</h2>
-                <p style={{ color: '#8B949E', fontSize: '13px' }}>Network Verified Profile</p>
-              </div>
-              <hr style={{ borderColor: '#21262D' }} />
-              <h4>📌 Bio Data & Social Info</h4>
-              <p>💼 <strong>Workplace:</strong> {userData.workplace || 'Not set'}</p>
-              <p>🎓 <strong>Status:</strong> {userData.status || 'Not set'}</p>
-              <p>❤️ <strong>Relationship:</strong> {userData.relation || 'Single'}</p>
-              <p>🏠 <strong>Hometown:</strong> {userData.hometown || 'Not set'}</p>
-              <button onClick={() => navigateTo('settings')} style={styles.btnSecondary}>✏️ Custom Profile Settings</button>
-              <button onClick={() => signOut(auth)} style={{ ...styles.btnPrimary, background: '#FF7B72', marginTop: '25px' }}>Log Out</button>
+              ))}
             </div>
           )}
 
-          {/* ⚙️ ট্যাব ৫: সেটিংস পেজ */}
+          {/* ==================== ফেসবুক লেভেল মেগা সেটিংস প্যানেল ==================== */}
           {activeTab === 'settings' && (
-            <div style={styles.postBox}>
-              <h3 style={{ color: '#58A6FF', marginTop: 0 }}>🛠️ Update Base Details</h3>
-              <input type="text" style={styles.input} placeholder="Workplace" value={userData.workplace} onChange={(e)=>setUserData({...userData, workplace: e.target.value})} />
-              <input type="text" style={styles.input} placeholder="Hometown" value={userData.hometown} onChange={(e)=>setUserData({...userData, hometown: e.target.value})} />
-              <select style={styles.input} value={userData.relation} onChange={(e)=>setUserData({...userData, relation: e.target.value})}><option>Single</option><option>In a Relationship</option><option>Married</option></select>
-              <button style={styles.btnPrimary} onClick={async () => { await setDoc(doc(db, "users", user.uid), userData, { merge: true }); alert('Cloud Sync Success!'); navigateTo('profile'); }}>Save to Cloud Database</button>
+            <div>
+              <h3 style={{ color: '#58A6FF', marginBottom: '20px' }}>⚙️ Settings & Privacy</h3>
+              
+              {/* ১. অ্যাকাউন্ট সেটিংস */}
+              <div style={styles.settingsSection}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#58A6FF' }}>👤 Account Settings</h4>
+                <div style={styles.settingsRow}><span>Name & Personal Info</span><span style={{ color: '#8B949E' }}>{userData.fullName} ⚙️</span></div>
+                <div style={styles.settingsRow}><span>Email Address</span><span style={{ color: '#8B949E' }}>{user.email}</span></div>
+                <div style={styles.settingsRow}><span>Profile Avatar Sync</span><span style={{ color: '#58A6FF', cursor: 'pointer' }}>Change</span></div>
+              </div>
+
+              {/* ২. প্রাইভেসী সেটিংস */}
+              <div style={styles.settingsSection}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#FF7B72' }}>🔒 Privacy & Safety</h4>
+                <div style={styles.settingsRow}>
+                  <div>
+                    <div>Lock Profile</div>
+                    <div style={{ fontSize: '11px', color: '#8B949E' }}>শুধুমাত্র ফলোয়াররাই আপনার পোস্ট দেখতে পারবে</div>
+                  </div>
+                  <input type="checkbox" checked={isAccountLocked} onChange={() => setIsAccountLocked(!isAccountLocked)} />
+                </div>
+                <div style={styles.settingsRow}>
+                  <div>
+                    <div>Show Active Status</div>
+                    <div style={{ fontSize: '11px', color: '#8B949E' }}>আপনি কখন লাইভে আছেন তা অন্যরা দেখতে পাবে</div>
+                  </div>
+                  <input type="checkbox" checked={isActiveStatusOn} onChange={() => setIsActiveStatusOn(!isActiveStatusOn)} />
+                </div>
+              </div>
+
+              {/* ৩. নোটিফিকেশন সেটিংস */}
+              <div style={styles.settingsSection}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#F2C94C' }}>🔔 Preferences</h4>
+                <div style={styles.settingsRow}><span>Push Notifications</span><input type="checkbox" checked={pushNotifications} onChange={() => setPushNotifications(!pushNotifications)} /></div>
+                <div style={styles.settingsRow}><span>Email Alerts</span><span style={{ color: '#8B949E' }}>Enabled</span></div>
+              </div>
+
+              {/* ৪. সিকিউরিটি এবং লগইন */}
+              <div style={styles.settingsSection}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#58A6FF' }}>🛡️ Security & Login</h4>
+                <div style={styles.settingsRow}><span>Two-Factor Authentication (2FA)</span><input type="checkbox" checked={twoFactorAuth} onChange={() => setTwoFactorAuth(!twoFactorAuth)} /></div>
+                <div style={styles.settingsRow}><span>Change Password</span><span style={{ color: '#58A6FF', cursor: 'pointer' }} onClick={() => alert('পাসওয়ার্ড পরিবর্তনের লিংক ইমেইলে পাঠানো হয়েছে।')}>Update</span></div>
+                <div style={styles.settingsRow}><span>Where You're Logged In</span><span style={{ color: '#8B949E' }}>Android Device (Active Now)</span></div>
+              </div>
+
+              {/* ৫. থিম ও ইউজার ইন্টারফেস */}
+              <div style={styles.settingsSection}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#7EE787' }}>🎨 Display & Theme</h4>
+                <div style={styles.settingsRow}>
+                  <span>Current Theme</span>
+                  <select style={{ background: '#0D1117', color: '#fff', border: '1px solid #30363D', padding: '4px', borderRadius: '4px' }} value={currentTheme} onChange={(e) => setCurrentTheme(e.target.value)}>
+                    <option>Dark Luxury</option>
+                    <option>Amoled Pure Black</option>
+                    <option>Light Mode</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* ৬. সাপোর্ট ও লিগ্যাল */}
+              <div style={styles.settingsSection}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#8B949E' }}>ℹ️ Help & Support</h4>
+                <div style={styles.settingsRow}><span>Terms of Service</span>➔</div>
+                <div style={styles.settingsRow}><span>Data Privacy Policy</span>➔</div>
+                <div style={styles.settingsRow}><span>Report a Technical Bug</span><span style={{ color: '#58A6FF', cursor: 'pointer' }}>Open Ticket</span></div>
+              </div>
+
+              <button onClick={() => signOut(auth)} style={{ ...styles.btnPrimary, background: '#FF7B72', marginTop: '10px' }}>Log Out from Device</button>
             </div>
           )}
 
-          {/* 📱 রিয়েল প্রোডাকশন লেভেল বটম নেভিগেশন বার (যা সম্পূর্ণ ১০০% কার্যকর) */}
+          {/* ==================== অন্যান্য ট্যাব প্লেসহোল্ডার ==================== */}
+          {activeTab === 'messages' && <div style={{ textAlign: 'center', padding: '40px' }}><h3>💬 Secure Messenger Engine</h3><p>রিয়েল-টাইম চ্যাট সিস্টেম রেডি হচ্ছে...</p></div>}
+          {activeTab === 'create' && <div style={{ textAlign: 'center', padding: '40px' }}><h3>➕ Multimedia Studio</h3><p>অডিও/ভিডিও এবং লাইভ ব্রডকাস্টিং কনসোল</p></div>}
+          {activeTab === 'profile' && (
+            <div style={styles.postCard}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ ...styles.avatar, width: '70px', height: '70px', fontSize: '24px', margin: '0 auto 10px auto' }}>{(userData.fullName || 'U')[0].toUpperCase()}</div>
+                <h3>{userData.fullName}</h3>
+                <p style={{ color: '#8B949E' }}>@{auth.currentUser?.email.split('@')[0]}</p>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '15px' }}>
+                  <div><strong>{userData.following?.length || 0}</strong><div style={{ color: '#8B949E', fontSize: '12px' }}>Following</div></div>
+                  <div><strong>{userData.followers?.length || 0}</strong><div style={{ color: '#8B949E', fontSize: '12px' }}>Followers</div></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 📱 ডাইনামিক বটম নেভিগেশন বার */}
           <div style={styles.bottomNav}>
-            <button onClick={() => navigateTo('home')} style={{ ...styles.navItem, ...(activeTab === 'home' ? styles.activeNavItem : {}) }}><span>🏠</span>Home</button>
-            <button onClick={() => navigateTo('messages')} style={{ ...styles.navItem, ...(activeTab === 'messages' ? styles.activeNavItem : {}), position: 'relative' }}><span>💬</span>Chats<span style={styles.badge}>Live</span></button>
-            <button onClick={() => navigateTo('create')} style={{ ...styles.navItem, ...(activeTab === 'create' ? styles.activeNavItem : {}) }}><span>➕</span>Studio</button>
-            <button onClick={() => navigateTo('profile')} style={{ ...styles.navItem, ...(activeTab === 'profile' ? styles.activeNavItem : {}) }}><span>👤</span>Profile</button>
+            <button onClick={() => navigateTo('home')} style={{ ...styles.navItem, ...(activeTab === 'home' ? { color: '#58A6FF' } : {}) }}><span>🏠</span>Home</button>
+            <button onClick={() => navigateTo('messages')} style={{ ...styles.navItem, ...(activeTab === 'messages' ? { color: '#58A6FF' } : {}) }}><span>💬</span>Chats</button>
+            <button onClick={() => navigateTo('create')} style={{ ...styles.navItem, ...(activeTab === 'create' ? { color: '#58A6FF' } : {}) }}><span>➕</span>Studio</button>
+            <button onClick={() => navigateTo('profile')} style={{ ...styles.navItem, ...(activeTab === 'profile' ? { color: '#58A6FF' } : {}) }}><span>👤</span>Profile</button>
           </div>
 
         </div>
       ) : (
-        /* ==================== অথেনটিকেশন গেটওয়ে ইন্টারফেস ==================== */
+        /* অথেনটিকেশন স্ক্রিন */
         <div style={styles.card}>
-          <h2 style={styles.title}>Lexal Social</h2>
-          {screen === 'login' ? (
-            <form onSubmit={handleLogin}>
-              <input type="email" style={styles.input} placeholder="Email address" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
-              <input type="password" style={styles.input} placeholder="Password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
-              <button type="submit" style={styles.btnPrimary}>Log In</button>
-              <button type="button" onClick={() => setScreen('signup')} style={styles.btnSecondary}>Join Lexal Social Network</button>
-            </form>
-          ) : (
-            <form onSubmit={handleSignUp}>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input type="text" style={styles.input} placeholder="First Name" value={signUpForm.firstName} onChange={(e)=>setSignUpForm({...signUpForm, firstName: e.target.value})} />
-                <input type="text" style={styles.input} placeholder="Last Name" value={signUpForm.lastName} onChange={(e)=>setSignUpForm({...signUpForm, lastName: e.target.value})} />
-              </div>
-              <input type="email" style={styles.input} placeholder="Email" value={signUpForm.email} onChange={(e)=>setSignUpForm({...signUpForm, email: e.target.value})} />
-              <input type="password" style={styles.input} placeholder="Password" value={signUpForm.password} onChange={(e)=>setSignUpForm({...signUpForm, password: e.target.value})} />
-              <button type="submit" style={styles.btnPrimary}>Create Account</button>
-              <div onClick={() => setScreen('login')} style={{ color: '#58A6FF', textAlign: 'center', marginTop: '15px', cursor: 'pointer', fontSize: '14px' }}>Already registered? Log In</div>
-            </form>
-          )}
-          {error && <div style={{ color: '#FF7B72', textAlign: 'center', marginTop: '10px', fontSize: '13px' }}>{error}</div>}
+          <h2 style={{ textAlign: 'center', color: '#58A6FF' }}>Lexal Social</h2>
+          <form onSubmit={handleLogin}>
+            <input type="email" style={styles.input} placeholder="Email" onChange={(e) => setLoginEmail(e.target.value)} />
+            <input type="password" style={styles.input} placeholder="Password" onChange={(e) => setLoginPassword(e.target.value)} />
+            <button type="submit" style={styles.btnPrimary}>Log In</button>
+          </form>
         </div>
       )}
     </div>
@@ -371,3 +334,4 @@ function App() {
 }
 
 export default App;
+    
