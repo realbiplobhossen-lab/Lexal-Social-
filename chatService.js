@@ -1,23 +1,22 @@
-import { collection, addDoc, query, where, orderBy, serverTimestamp } from "firebase/firestore";
-import { db } from "../config/firebase";
+import { db } from '../config/firebase';
+import { collection, addDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
 
-export async function sendMessage(chatId, senderId, text) {
-  if (!text.trim()) return;
-  await addDoc(collection(db, "messages"), {
-    chatId,
-    senderId,
-    text,
-    type: "text",
-    status: "sent",
-    createdAt: serverTimestamp()
-  });
-}
-
-// ChatScreen এ রিয়েল-টাইম লিসেন করার জন্য কুয়েরি ফাংশন
-export function getMessages(chatId) {
-  return query(
-    collection(db, "messages"),
-    where("chatId", "==", chatId),
-    orderBy("createdAt", "asc")
-  );
-}
+export const chatService = {
+  getRoomId: (uid1, uid2) => (uid1 > uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`),
+  
+  sendLiveMessage: async (senderId, receiverId, text) => {
+    const roomId = chatService.getRoomId(senderId, receiverId);
+    await addDoc(collection(db, `chats/${roomId}/messages`), {
+      senderUid: senderId,
+      text: text,
+      createdAt: Date.now()
+    });
+  },
+  listenToChat: (senderId, receiverId, callback) => {
+    const roomId = chatService.getRoomId(senderId, receiverId);
+    const q = query(collection(db, `chats/${roomId}/messages`), orderBy("createdAt", "asc"));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(d => d.data()));
+    });
+  }
+};
