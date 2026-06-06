@@ -1,15 +1,14 @@
-import { getMessaging, getToken } from "firebase/messaging";
+import { db } from '../config/firebase';
+import { collection, onSnapshot, query, orderBy, doc, updateDoc } from 'firebase/firestore';
 
-export async function registerFCM() {
-  try {
-    const messaging = getMessaging();
-    // টোকেন জেনারেট করার সুরক্ষিত প্রমিজ হ্যান্ডলিং
-    const token = await getToken(messaging, {
-      vapidKey: "YOUR_VAPID_KEY" // আপনার ফায়ারবেস ক্লাউড মেসেজিং এর অরিজিনাল কী এখানে বসাবেন
+export const notificationService = {
+  listenNotifications: (userId, callback) => {
+    const q = query(collection(db, `users/${userId}/notifications`), orderBy("createdAt", "desc"));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
     });
-    return token;
-  } catch (error) {
-    console.error("FCM Token Registration Failed:", error);
-    return null;
+  },
+  markAsRead: async (userId, notifId) => {
+    await updateDoc(doc(db, `users/${userId}/notifications`, notifId), { status: "read" });
   }
-}
+};
