@@ -5,10 +5,10 @@ import {
 } from 'firebase/auth';
 import { 
   collection, doc, setDoc, getDoc, addDoc, onSnapshot, query, orderBy, 
-  updateDoc, arrayUnion, arrayRemove, getDocs, where, limit 
+  updateDoc, arrayUnion, arrayRemove, getDocs, where 
 } from 'firebase/firestore';
 
-// 🎨 গ্লোবাল ফেসবুক-লাক্সারি ডার্ক থিম স্টাইল শিট (Production Grade)
+// 🎨 গ্লোবাল ফেসবুক-লাক্সারি ডার্ক থিম স্টাইল শিট
 const styles = {
   container: { background: '#090D13', color: '#E6EDF3', minHeight: '100vh', paddingBottom: '90px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
   loading: { display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#090D13', color: '#58A6FF' },
@@ -31,21 +31,18 @@ const styles = {
 };
 
 function App() {
-  // ⚡ কোর সিস্টেম অথেনটিকেশন ও রাউটিং স্টেট
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('home'); 
   const [screen, setScreen] = useState('login');
   const [error, setError] = useState('');
 
-  // ⚡ ফেসবুক ডাটা আর্কিটেকচার স্টেট
   const [posts, setPosts] = useState([]);
-  const [userData, setUserData] = useState({ fullName: '', friends: [], sentRequests: [], receivedRequests: [], workplace: '', hometown: '', relation: '' });
+  const [userData, setUserData] = useState({ fullName: '', friends: [], sentRequests: [], receivedRequests: [] });
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [notifications, setNotifications] = useState([]);
   
-  // ⚡ চ্যাট ও কমেন্ট ইঞ্জিন স্টেট
   const [activeChatFriend, setActiveChatFriend] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const [typedMessage, setTypedMessage] = useState('');
@@ -54,14 +51,12 @@ function App() {
   const [commentText, setCommentText] = useState('');
   const [postComments, setPostComments] = useState({});
 
-  // ⚡ অথেনটিকেশন ফর্ম স্টেট
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [signUpForm, setSignUpForm] = useState({ firstName: '', lastName: '', email: '', password: '' });
   
   const chatBottomRef = useRef(null);
 
-  // 📱 ইন-অ্যাপ ইউনিভার্সাল ব্যাক বাটন ইন্টিগ্রেশন (অ্যান্ড্রয়েড হার্ডওয়্যার সাপোর্ট)
   const navigateTo = (tab) => {
     setActiveTab(tab);
     window.history.pushState({ tab }, tab, `#${tab}`);
@@ -76,24 +71,21 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // 🔄 ফায়ারবেস রিয়েল-টাইম ডাটাবেজ সিনক্রোনাইজার ইঞ্জিন
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // ১. ইউজারের প্রোফাইল, ফ্রেন্ড লিস্ট, এবং রিকোয়েস্ট ট্র্যাকিং লিসেনার
         const docRef = doc(db, "users", currentUser.uid);
         onSnapshot(docRef, (docSnap) => {
           if (docSnap.exists()) {
             setUserData(docSnap.data());
           } else {
-            const defaultData = { fullName: currentUser.displayName || 'Lexal User', uid: currentUser.uid, friends: [], sentRequests: [], receivedRequests: [], workplace: 'Lexal Corp', hometown: 'Dhaka', relation: 'Single' };
+            const defaultData = { fullName: currentUser.displayName || 'Lexal User', uid: currentUser.uid, friends: [], sentRequests: [], receivedRequests: [] };
             setDoc(docRef, defaultData);
             setUserData(defaultData);
           }
         });
 
-        // ২. ফেসবুক স্টাইল রিয়েল-টাইম নোটিফিকেশন লিসেনার (লাইভ পুশ এলার্ট)
         const notifQuery = query(collection(db, `users/${currentUser.uid}/notifications`), orderBy("createdAt", "desc"));
         onSnapshot(notifQuery, (snap) => {
           setNotifications(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -104,7 +96,6 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // 📰 গ্লোবাল নিউজফিড ও পোস্ট লিসেনার
   useEffect(() => {
     if (!user) return;
     const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
@@ -114,10 +105,8 @@ function App() {
     return () => unsubscribe();
   }, [user]);
 
-  // 💬 মেসেঞ্জার রিয়েল-টাইম চ্যাট লিসেনার (ইনবক্স মেকানিজম)
   useEffect(() => {
     if (!user || !activeChatFriend) return;
-    // ইউনিক চ্যাট রুম আইডি জেনারেটর (দুই বন্ধুর আইডির কম্বিনেশন)
     const chatRoomId = user.uid > activeChatFriend.uid ? `${user.uid}_${activeChatFriend.uid}` : `${activeChatFriend.uid}_${user.uid}`;
     const chatQuery = query(collection(db, `chats/${chatRoomId}/messages`), orderBy("createdAt", "asc"));
     
@@ -128,7 +117,6 @@ function App() {
     return () => unsubscribe();
   }, [user, activeChatFriend]);
 
-  // 🔍 গ্লোবাল ইউজার সার্চ ফাইন্ডার (মিলিয়ন্স ইউজার কোয়েরি)
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -142,7 +130,6 @@ function App() {
     return () => clearTimeout(delayDebounce);
   }, [searchQuery]);
 
-  // ⚡ ফাংশন ১: রিয়েল-টাইম ফ্রেন্ড রিকোয়েস্ট ট্রিগার + ইনস্ট্যান্ট নোটিফিকেশন পুশ
   const sendFriendRequest = async (targetUser) => {
     const myDocRef = doc(db, "users", user.uid);
     const targetDocRef = doc(db, "users", targetUser.uid);
@@ -150,17 +137,15 @@ function App() {
       await updateDoc(myDocRef, { sentRequests: arrayUnion(targetUser.uid) });
       await updateDoc(targetDocRef, { receivedRequests: arrayUnion(user.uid) });
 
-      // টার্গেট ইউজারের ডিভাইসে রিয়েল-টাইম নোটিফিকেশন পুশ করা হলো
       await addDoc(collection(db, `users/${targetUser.uid}/notifications`), {
         senderName: userData.fullName, senderUid: user.uid, type: "friend_request",
         message: `${userData.fullName} আপনাকে একটি ফ্রেন্ড রিকোয়েস্ট পাঠিয়েছেন।`,
         createdAt: Date.now(), status: "unread"
       });
-      alert(`রিকোয়েস্ট পাঠানো হয়েছে! ${targetUser.fullName}-এর ফোনে নোটিফিকেশন চলে গেছে।`);
+      alert(`রিকোয়েস্ট পাঠানো হয়েছে!`);
     } catch (err) { alert("রিকোয়েস্ট পাঠানো সম্ভব হয়নি।"); }
   };
 
-  // ⚡ ফাংশন ২: রিকোয়েস্ট এক্সেপ্ট করা (২-ওয়ে মিউচুয়াল ফ্রেন্ডশিপ কনফিগারেশন)
   const acceptFriendRequest = async (senderUid, senderName, notifId) => {
     const myDocRef = doc(db, "users", user.uid);
     const senderDocRef = doc(db, "users", senderUid);
@@ -168,10 +153,8 @@ function App() {
       await updateDoc(myDocRef, { friends: arrayUnion(senderUid), receivedRequests: arrayRemove(senderUid) });
       await updateDoc(senderDocRef, { friends: arrayUnion(user.uid), sentRequests: arrayRemove(user.uid) });
 
-      // নোটিফিকেশনটি এক্সেপ্টেড হিসেবে আপডেট
       await updateDoc(doc(db, `users/${user.uid}/notifications`, notifId), { type: "accepted", message: `আপনি এবং ${senderName} এখন বন্ধু।`, status: "read" });
 
-      // রিকোয়েস্টদাতাকে ব্যাক-নোটিফিকেশন পাঠানো
       await addDoc(collection(db, `users/${senderUid}/notifications`), {
         senderName: userData.fullName, senderUid: user.uid, type: "request_accepted",
         message: `${userData.fullName} আপনার ফ্রেন্ড রিকোয়েস্ট গ্রহণ করেছেন।`,
@@ -181,7 +164,6 @@ function App() {
     } catch (err) { alert("কনফার্ম করা যায়নি।"); }
   };
 
-  // ⚡ ফাংশন ৩: রিকোয়েস্ট ডিলিট বা রিজেক্ট করা
   const rejectFriendRequest = async (senderUid, notifId) => {
     try {
       await updateDoc(doc(db, "users", user.uid), { receivedRequests: arrayRemove(senderUid) });
@@ -190,7 +172,6 @@ function App() {
     } catch (err) {}
   };
 
-  // ⚡ ফাংশন ৪: মেসেঞ্জার লাইভ মেসেজ সেন্ডিং ইঞ্জিন
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!typedMessage.trim() || !activeChatFriend) return;
@@ -201,7 +182,6 @@ function App() {
     await addDoc(collection(db, `chats/${chatRoomId}/messages`), messageData);
   };
 
-  // ⚡ ফাংশন ৫: ফেসবুক টাইমলাইন পোস্ট ইঞ্জিন
   const handleCreatePost = async (e) => {
     e.preventDefault();
     if (!postText.trim()) return;
@@ -209,7 +189,6 @@ function App() {
     setPostText('');
   };
 
-  // ⚡ ফাংশন ৬: রিয়েল-টাইম পোস্ট লাইক সিস্টেম
   const handleLikePost = async (postId, likesArray) => {
     const postRef = doc(db, "posts", postId);
     if (likesArray?.includes(user.uid)) {
@@ -219,7 +198,6 @@ function App() {
     }
   };
 
-  // ⚡ ফাংশন ৭: রিয়েল-টাইম কমেন্ট লোডার ও সাবমিশন
   const handleOpenComments = async (postId) => {
     setActiveCommentPostId(postId);
     const q = query(collection(db, `posts/${postId}/comments`), orderBy("createdAt", "asc"));
@@ -235,7 +213,6 @@ function App() {
     setCommentText('');
   };
 
-  // ⚡ ফাংশন ৮: গেটওয়ে অথেনটিকেশন (Login & Register)
   const handleLogin = async (e) => {
     e.preventDefault();
     try { await signInWithEmailAndPassword(auth, loginEmail, loginPassword); } catch (err) { setError('ইমেইল বা পাসওয়ার্ড ভুল!'); }
@@ -247,7 +224,7 @@ function App() {
       const cred = await createUserWithEmailAndPassword(auth, signUpForm.email, signUpForm.password);
       const fullName = `${signUpForm.firstName} ${signUpForm.lastName}`;
       await updateProfile(cred.user, { displayName: fullName });
-      const defaultProfile = { fullName, email: signUpForm.email, uid: cred.user.uid, friends: [], sentRequests: [], receivedRequests: [], workplace: 'Not Set', hometown: 'Dhaka', relation: 'Single' };
+      const defaultProfile = { fullName, email: signUpForm.email, uid: cred.user.uid, friends: [], sentRequests: [], receivedRequests: [] };
       await setDoc(doc(db, "users", cred.user.uid), defaultProfile);
       setUserData(defaultProfile);
       setScreen('login');
@@ -255,7 +232,6 @@ function App() {
     } catch (err) { setError(err.message); }
   };
 
-  // লিয়াকত সোশ্যাল ইঞ্জিন লোড হচ্ছে...
   if (loading) return <div style={styles.loading}><h2>Lexal Facebook Core Engine Activating...</h2></div>;
 
   return (
@@ -264,7 +240,6 @@ function App() {
         <div style={styles.header}>
           <div style={styles.logo} onClick={() => { setActiveChatFriend(null); navigateTo('home'); }}>Lexal Net</div>
           <div style={{ display: 'flex', gap: '20px', position: 'relative' }}>
-            {/* 🔔 নোটিফিকেশন আইকন ব্যাজ কাউন্টার */}
             <span onClick={() => navigateTo('notifications')} style={{ cursor: 'pointer', fontSize: '20px', position: 'relative' }}>
               🔔{notifications.filter(n => n.status === 'unread').length > 0 && (
                 <span style={styles.badge}>{notifications.filter(n => n.status === 'unread').length}</span>
@@ -278,12 +253,10 @@ function App() {
       {user ? (
         <div style={styles.mainContent}>
           
-          {/* ================= VIEW 1: HOME TIMELINE & SEARCH ================= */}
           {activeTab === 'home' && !activeChatFriend && (
             <div>
               <input type="text" style={{ ...styles.input, background: '#161B22', borderRadius: '25px', marginBottom: '18px' }} placeholder="🔍 বন্ধুদের নাম লিখে সার্চ করুন..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
 
-              {/* লাইভ গ্লোবাল সার্চ ফাইন্ডার গ্রিড */}
               {searchResults.length > 0 && (
                 <div style={{ background: '#161B22', padding: '15px', borderRadius: '12px', border: '1px solid #30363D', marginBottom: '15px' }}>
                   <h5 style={{ margin: '0 0 10px 0', color: '#58A6FF' }}>অনুসন্ধানের ফলাফল:</h5>
@@ -297,7 +270,7 @@ function App() {
                         <strong>{targetUser.fullName}</strong>
                         <div>
                           {isFriend ? <span style={{ color: '#8B949E', fontSize: '13px' }}>🤝 বন্ধু</span> :
-                           hasSent ? <span style={{ color: '#F2C94C', fontSize: '13px' }}>⏳ রিকোয়েস্ট পেন্ডিং</span> :
+                           hasSent ? <span style={{ color: '#F2C94C', fontSize: '13px' }}>⏳ পেন্ডিং</span> :
                            hasReceived ? <button onClick={() => navigateTo('notifications')} style={{ background: '#58A6FF', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px' }}>Respond</button> :
                            <button onClick={() => sendFriendRequest(targetUser)} style={{ background: '#238636', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold' }}>+ Add Friend</button>}
                         </div>
@@ -307,14 +280,12 @@ function App() {
                 </div>
               )}
 
-              {/* ফেসবুক স্টাইল ক্রিয়েট পোস্ট বক্স */}
               <div style={styles.postCard}>
-                <textarea style={{ ...styles.input, height: '65px', resize: 'none', marginTop: 0 }} placeholder={`আপনার মনে কী চলছে, ${userData.fullName?.split(' ')[0]}?`} value={postText} onChange={(e) => setPostText(e.target.value)} />
+                <textarea style={{ ...styles.input, height: '65px', resize: 'none', marginTop: 0 }} placeholder={`আপনার মনে কী চলছে?`} value={postText} onChange={(e) => setPostText(e.target.value)} />
                 <button onClick={handleCreatePost} style={{ ...styles.btnPrimary, width: 'auto', padding: '6px 18px', float: 'right', fontSize: '13px' }}>Post</button>
                 <div style={{ clear: 'both' }}></div>
               </div>
 
-              {/* লাইভ নিউজফিড রেন্ডারিং গ্রিড */}
               {posts.map(post => (
                 <div key={post.id} style={styles.postCard}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
@@ -323,7 +294,6 @@ function App() {
                   </div>
                   <p style={{ fontSize: '15px', color: '#F0F6FC' }}>{post.content}</p>
                   
-                  {/* লাইক ও কমেন্ট অ্যাকশন বার */}
                   <div style={{ display: 'flex', gap: '20px', borderTop: '1px solid #21262D', paddingTop: '10px', marginTop: '10px' }}>
                     <span onClick={() => handleLikePost(post.id, post.likes)} style={{ cursor: 'pointer', color: post.likes?.includes(user.uid) ? '#58A6FF' : '#8B949E', fontSize: '14px' }}>
                       👍 {post.likes?.length || 0} Likes
@@ -333,7 +303,6 @@ function App() {
                     </span>
                   </div>
 
-                  {/* কমেন্ট সেকশন ড্রপডাউন */}
                   {activeCommentPostId === post.id && (
                     <div style={{ marginTop: '15px', background: '#0D1117', padding: '10px', borderRadius: '8px' }}>
                       {postComments[post.id]?.map((c, idx) => (
@@ -352,7 +321,6 @@ function App() {
             </div>
           )}
 
-          {/* ================= VIEW 2: REAL-TIME NOTIFICATION PANEL ================= */}
           {activeTab === 'notifications' && (
             <div>
               <h3 style={{ color: '#58A6FF', marginBottom: '15px' }}>🔔 নোটিফিকেশন সেন্টার</h3>
@@ -360,7 +328,7 @@ function App() {
                 notifications.map(n => (
                   <div key={n.id} style={{ ...styles.postCard, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: n.status === 'unread' ? '#1C212A' : '#161B22' }}>
                     <div style={{ fontSize: '14px', color: '#F0F6FC' }}>{n.message}</div>
-                    {n.type === 'friend_request' && n.status === 'unread' && (
+                    {n.type === 'friend_request' && (
                       <div style={{ display: 'flex', gap: '6px' }}>
                         <button onClick={() => acceptFriendRequest(n.senderUid, n.senderName, n.id)} style={{ background: '#238636', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>Confirm</button>
                         <button onClick={() => rejectFriendRequest(n.senderUid, n.id)} style={{ background: '#FF7B72', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px' }}>Delete</button>
@@ -372,15 +340,14 @@ function App() {
             </div>
           )}
 
-          {/* ================= VIEW 3: MESSENGER LIVE CHAT ENGINE ================= */}
           {activeTab === 'messages' && (
             <div>
               {!activeChatFriend ? (
                 <div>
                   <h3 style={{ color: '#58A6FF', marginBottom: '15px' }}>💬 মেসেঞ্জার ইনবক্স</h3>
-                  <p style={{ fontSize: '13px', color: '#8B949E' }}>চ্যাট করতে আপনার যেকোনো বন্ধুর নামের ওপর ক্লিক করুন:</p>
+                  <p style={{ fontSize: '13px', color: '#8B949E' }}>বন্ধুদের সাথে চ্যাট করতে ক্লিক করুন:</p>
                   {posts.filter(p => userData.friends?.includes(p.uid))
-                    .filter((v, i, a) => a.findIndex(t => (t.uid === v.uid)) === i) // ইউনিক ফ্রেন্ড ফিল্টারিং
+                    .filter((v, i, a) => a.findIndex(t => (t.uid === v.uid)) === i)
                     .map(f => (
                       <div key={f.uid} onClick={() => setActiveChatFriend({ uid: f.uid, fullName: f.author })} style={{ background: '#161B22', padding: '14px', borderRadius: '10px', border: '1px solid #30363D', marginBottom: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={styles.avatar}>{f.author?.[0]?.toUpperCase()}</div>
@@ -389,14 +356,11 @@ function App() {
                   ))}
                 </div>
               ) : (
-                /* একটি নির্দিষ্ট বন্ধুর চ্যাট উইন্ডো */
-                <div style={{ background: '#161B22', borderRadius: '14px', border: '1px solid #30363D', height: '70vh', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ background: '#161B22', borderRadius: '14px', border: '1px solid #30363D', height: '60vh', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ padding: '14px', borderBottom: '1px solid #30363D', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <strong>🟢 {activeChatFriend.fullName}</strong>
                     <button onClick={() => setActiveChatFriend(null)} style={{ background: '#21262D', color: '#FF7B72', border: 'none', padding: '4px 10px', borderRadius: '4px' }}>Close</button>
                   </div>
-                  
-                  {/* চ্যাট মেসেজ ফিড স্ক্রিন */}
                   <div style={{ flex: 1, overflowY: 'auto', padding: '15px', display: 'flex', flexDirection: 'column' }}>
                     {chatMessages.map((msg, i) => (
                       <div key={i} style={msg.senderUid === user.uid ? styles.chatBubbleRight : styles.chatBubbleLeft}>
@@ -405,46 +369,38 @@ function App() {
                     ))}
                     <div ref={chatBottomRef} />
                   </div>
-
-                  {/* মেসেজ টাইপিং অ্যান্ড সাবমিশন ট্রে */}
                   <form onSubmit={handleSendMessage} style={{ padding: '10px', borderTop: '1px solid #30363D', display: 'flex', gap: '8px' }}>
-                    <input type="text" style={{ ...styles.input, margin: 0 }} placeholder="একটি মেসেজ লিখুন..." value={typedMessage} onChange={(e) => setTypedMessage(e.target.value)} />
-                    <button type="submit" style={{ background: '#1F6FEB', color: '#fff', border: 'none', padding: '0 20px', borderRadius: '8px', fontWeight: 'bold' }}>Send</button>
+                    <input type="text" style={{ ...styles.input, margin: 0 }} placeholder="একটি মেসেজ..." value={typedMessage} onChange={(e) => setTypedMessage(e.target.value)} />
+                    <button type="submit" style={{ background: '#1F6FEB', color: '#fff', border: 'none', padding: '0 20px', borderRadius: '8px' }}>Send</button>
                   </form>
                 </div>
               )}
             </div>
           )}
 
-          {/* ================= VIEW 4: MEGA SETTINGS ================= */}
           {activeTab === 'settings' && (
             <div>
-              <h3 style={{ color: '#58A6FF', marginBottom: '15px' }}>⚙️ Super Settings & Privacy</h3>
+              <h3 style={{ color: '#58A6FF', marginBottom: '15px' }}>⚙️ settings</h3>
               <div style={styles.settingsSection}>
-                <h4 style={{ margin: '0 0 10px 0', color: '#58A6FF' }}>👤 Account Center</h4>
-                <div style={styles.settingsRow}><span>প্রোফাইল নেম</span><span style={{ color: '#8B949E' }}>{userData.fullName}</span></div>
-                <div style={styles.settingsRow}><span>লগইন ইমেইল</span><span style={{ color: '#8B949E' }}>{user.email}</span></div>
+                <div style={styles.settingsRow}><span>নাম:</span><span style={{ color: '#8B949E' }}>{userData.fullName}</span></div>
+                <div style={styles.settingsRow}><span>ইমেইল:</span><span style={{ color: '#8B949E' }}>{user.email}</span></div>
               </div>
-              <button onClick={() => signOut(auth)} style={{ ...styles.btnPrimary, background: '#FF7B72' }}>Log Out from Device</button>
+              <button onClick={() => signOut(auth)} style={{ ...styles.btnPrimary, background: '#FF7B72' }}>Log Out</button>
             </div>
           )}
 
-          {/* ================= VIEW 5: SOCIAL PROFILE VIEW ================= */}
           {activeTab === 'profile' && (
             <div style={styles.postCard}>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ ...styles.avatar, width: '75px', height: '75px', fontSize: '28px', margin: '0 auto 12px auto' }}>{userData.fullName?.[0]?.toUpperCase()}</div>
                 <h3>{userData.fullName}</h3>
-                <p style={{ color: '#8B949E' }}>@{user.email.split('@')[0]}</p>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', marginTop: '20px', borderTop: '1px solid #21262D', paddingTop: '15px' }}>
-                  <div><strong>{userData.friends?.length || 0}</strong><div style={{ color: '#8B949E', fontSize: '13px' }}>Friends</div></div>
-                  <div><strong>{userData.receivedRequests?.length || 0}</strong><div style={{ color: '#8B949E', fontSize: '13px' }}>Requests</div></div>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', marginTop: '20px' }}>
+                  <div><strong>{userData.friends?.length || 0}</strong><div>Friends</div></div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* 📱 ফেসবুক স্টাইল বটম স্মার্ট নেভিগেশন বার */}
           <div style={styles.bottomNav}>
             <button onClick={() => { setActiveChatFriend(null); navigateTo('home'); }} style={{ ...styles.navItem, ...(activeTab === 'home' ? { color: '#58A6FF' } : {}) }}><span>🏠</span>Home</button>
             <button onClick={() => navigateTo('messages')} style={{ ...styles.navItem, ...(activeTab === 'messages' ? { color: '#58A6FF' } : {}) }}><span>💬</span>Messenger</button>
@@ -453,7 +409,6 @@ function App() {
 
         </div>
       ) : (
-        /* ================= GATEWAY PORTAL: LOGIN & REGISTER ================= */
         <div style={styles.card}>
           <h2 style={{ textAlign: 'center', color: '#58A6FF', margin: '0 0 20px 0' }}>Lexal Social</h2>
           {screen === 'login' ? (
@@ -472,10 +427,10 @@ function App() {
               <input type="email" style={styles.input} placeholder="ইমেইল এড্রেস" onChange={(e)=>setSignUpForm({...signUpForm, email: e.target.value})} required />
               <input type="password" style={styles.input} placeholder="নতুন পাসওয়ার্ড" onChange={(e)=>setSignUpForm({...signUpForm, password: e.target.value})} required />
               <button type="submit" style={styles.btnPrimary}>Sign Up</button>
-              <div onClick={() => setScreen('login')} style={{ color: '#58A6FF', textAlign: 'center', marginTop: '15px', cursor: 'pointer', fontSize: '14px' }}>ইতিমধ্যে একাউন্ট আছে? লগইন করুন</div>
+              <div onClick={() => setScreen('login')} style={{ color: '#58A6FF', textAlign: 'center', marginTop: '15px', cursor: 'pointer' }}>লগইন করুন</div>
             </form>
           )}
-          {error && <div style={{ color: '#FF7B72', textAlign: 'center', marginTop: '12px', fontSize: '13px' }}>{error}</div>}
+          {error && <div style={{ color: '#FF7B72', textAlign: 'center', marginTop: '12px' }}>{error}</div>}
         </div>
       )}
     </div>
@@ -483,4 +438,3 @@ function App() {
 }
 
 export default App;
-                   
