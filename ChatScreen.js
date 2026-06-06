@@ -1,60 +1,62 @@
-import React, { useEffect, useState } from "react";
-import { onSnapshot } from "firebase/firestore";
-import { auth } from "../config/firebase";
-import { sendMessage, getMessagesQuery } from "../services/chatService";
+import React, { useState, useEffect } from 'react';
+import { chatService } from '../services/chatService';
+import { videoService } from '../services/videoService';
 
-export default function ChatScreen({ chatId }) {
+function ChatScreen({ user, userData }) {
+  const [activeFriend, setActiveFriend] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [text, setText] = useState("");
+  const [text, setText] = useState('');
 
   useEffect(() => {
-    if (!chatId) return;
+    if (!activeFriend) return;
+    const unsub = chatService.listenToChat(user.uid, activeFriend.uid, setMessages);
+    return () => unsub();
+  }, [activeFriend, user.uid]);
 
-    // getMessagesQuery আপনার চ্যাট সার্ভিস থেকে কুয়েরি অবজেক্ট নিয়ে আসবে
-    const unsubscribe = onSnapshot(
-      getMessagesQuery(chatId),
-      (snapshot) => {
-        setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      },
-      (error) => console.error("Chat error:", error)
-    );
-
-    return () => unsubscribe();
-  }, [chatId]);
-
-  const submit = async () => {
+  const handleSend = (e) => {
+    e.preventDefault();
     if (!text.trim()) return;
-    if (!auth.currentUser) return alert("Not Authenticated");
-
-    try {
-      await sendMessage(chatId, auth.currentUser.uid, text.trim());
-      setText("");
-    } catch (err) {
-      alert("Failed to send: " + err.message);
-    }
+    chatService.sendLiveMessage(user.uid, activeFriend.uid, text);
+    setText('');
   };
 
+  if (!activeFriend) {
+    return (
+      <div className="chat-screen">
+        <h3>💬 মেসেঞ্জার ইনবক্স</h3>
+        {userData?.friends?.length === 0 ? <p style={{ color: '#6B7280' }}>কোনো সক্রিয় বন্ধু পাওয়া যায়নি। সার্চ বার থেকে ফলো করুন।</p> :
+          userData?.friends?.map(fUid => (
+            <div key={fUid} onClick={() => setActiveFriend({ uid: fUid, fullName: "অনলাইন ব্যবহারকারী" })} className="friend-chat-row">
+              <strong>👤 ইউজার ({fUid.substring(0,5)})</strong>
+              <span className="online-tag">🟢 অনলাইন</span>
+            </div>
+          ))
+        }
+      </div>
+    );
+  }
+
   return (
-    <div className="chat-screen" style={{ padding: "20px" }}>
-      <div className="messages-list" style={{ height: "70vh", overflowY: "auto", marginBottom: "20px" }}>
-        {messages.map(msg => (
-          <div key={msg.id} style={{ margin: "5px 0", textAlign: msg.senderId === auth.currentUser?.uid ? "right" : "left" }}>
-            <span style={{ fontSize: "12px", color: "#666" }}>{msg.senderName || msg.senderId}</span>
-            <p style={{ background: "#f1f1f1", padding: "8px", borderRadius: "8px", display: "inline-block", margin: "2px 0" }}>
-              {msg.text}
-            </p>
+    <div className="chat-window">
+      <div className="chat-window-header">
+        <strong>{activeFriend.fullName}</strong>
+        <div className="call-actions">
+          <span onClick={() => videoService.initializeLiveCall(activeFriend.uid)}>📞</span>
+          <button onClick={() => setActiveFriend(null)}>Back</button>
+        </div>
+      </div>
+      <div className="chat-messages-area">
+        {messages.map((m, i) => (
+          <div key={i} className={`msg-bubble ${m.senderUid === user.uid ? 'right' : 'left'}`}>
+            {m.text}
           </div>
         ))}
       </div>
-      <div style={{ display: "flex" }}>
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Type a message..."
-          style={{ flex: 1, padding: "10px" }}
-        />
-        <button onClick={submit} style={{ padding: "10px 20px" }}>Send</button>
-      </div>
+      <form onSubmit={handleSend} className="chat-input-form">
+        <input type="text" value={text} onChange={e=>setText(e.target.value)} placeholder="মেসেজ লিখুন..." />
+        <button type="submit">পাঠান</button>
+      </form>
     </div>
   );
 }
+export default ChatScreen;
