@@ -21,12 +21,11 @@ jobs:
         with:
           node-version: 20
 
-      - name: Set up JDK 17 (Standard Android Build)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin' # জ্যুলু বাদ দিয়ে টেমুরিন ব্যবহার করা হয়েছে যা পাথ অটো-কনফিগ করে
-          java-version: '17'
-          cache: 'gradle'
+      # গিটহাবের লিনাক্স সিস্টেমে আগে থেকে ইনস্টল থাকা ডিফল্ট জাভাকে সরাসরি সক্রিয় করা
+      - name: Locate and Set Default System Java
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
+          echo "PATH=$JAVA_HOME_17_X64/bin:$PATH" >> $GITHUB_ENV
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
@@ -52,13 +51,15 @@ jobs:
           echo "subprojects { project -> if (project.hasProperty('android')) { android { packagingOptions { resources { excludes += ['META-INF/搶otlin_module', 'META-INF/*'] } } } } }" >> build.gradle
           echo "allprojects { configurations.all { resolutionStrategy { eachDependency { details -> if (details.requested.group == 'org.jetbrains.kotlin') { details.useVersion '1.8.22' } } } } }" >> build.gradle
 
-      # স্বয়ংক্রিয় জাভা হোম পাথ ডিটেকশন ও গ্র্যাডল বিল্ড
+      # সরাসরি সিস্টেম লেভেল জাভা এনভায়রনমেন্ট পুশ করে গ্রেডল বিল্ড রান করা
       - name: Build Android Debug APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew clean
           ./gradlew assembleDebug --no-daemon
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME }}
 
       - name: Upload Generated APK
         uses: actions/upload-artifact@v4
