@@ -30,25 +30,26 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Dependencies
+      - name: Install Core Dependencies
         run: npm install
 
-      # এটি আপনার নতুন ডাইনামিক .js এবং .css ফাইলগুলোকে অ্যান্ড্রয়েডের উপযোগী করে 'dist' ফোল্ডারে বিল্ড করবে
+      # ক্যপাসিটরের জন্য প্রয়োজনীয় প্লাগইন গিটহাব রানারে ইনস্টল করা
+      - name: Install Capacitor CLI & Android Packages
+        run: npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      # এটি আপনার নতুন ডাইনামিক .jsx এবং .css ফাইলগুলোকে 'dist' ফোল্ডারে বিল্ড করবে
       - name: Build Web Asset (Vite Production)
         run: npm run build
 
-      # ক্যপাসিটর কনফিগারেশন চেক এবং অ্যান্ড্রয়েড প্ল্যাটফর্ম তৈরি
-      - name: Initialize Capacitor
+      # ক্যপাসিটর কনফিগারেশন এবং ফ্রেশ অ্যান্ড্রোয়েড ডিরেক্টরি তৈরি
+      - name: Initialize Capacitor & Add Android Platform
         run: |
+          npx cap init "Lexal Social" "com.lexalsocial.app" --web-dir=dist || true
           npx cap add android || true
 
-      # অ্যান্ড্রোয়েড ফোল্ডার ভ্যালিডেশন এবং সোর্স কোড সিঙ্কিং
+      # সোর্স কোড অ্যান্ড্রয়েড প্রজেক্টে সিঙ্ক করা
       - name: Sync Code to Android
-        run: |
-          if [ ! -d "android" ]; then
-            npx cap add android
-          fi
-          npx cap sync android
+        run: npx cap sync android
 
       # গ্রেডল ডুপ্লিকেট ফাইল ইরর ফিক্স মেকানিজম
       - name: Inject Strict Gradle Duplicate Fixes
@@ -65,7 +66,7 @@ jobs:
           ./gradlew clean
           ./gradlew assembleDebug --no-daemon
 
-      # জেনারেট হওয়া APK ফাইলটি আপনার গিটহাবের 'Actions' ট্যাবে ডাউনলোডের জন্য আপলোড করবে
+      # জেনারেট হওয়া APK ফাইলটি ডাউনলোডের জন্য আপলোড করা
       - name: Upload Generated APK
         uses: actions/upload-artifact@v4
         with:
