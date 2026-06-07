@@ -1,4 +1,4 @@
-name: Android Build
+name: Android Capacitor Dynamic Build
 
 on:
   push:
@@ -33,18 +33,21 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      # এটি সমস্ত .jsx এবং .js ফাইলকে অ্যান্ড্রোয়েড ওয়েবভিউ এর উপযোগী করে বিল্ড করবে
+      # এটি আপনার নতুন ডাইনামিক .js এবং .css ফাইলগুলোকে অ্যান্ড্রয়েডের উপযোগী করে 'dist' ফোল্ডারে বিল্ড করবে
       - name: Build Web Asset (Vite Production)
         run: npm run build
 
+      # ক্যপাসিটর ইনিশিয়ালাইজেশন এবং অ্যান্ড্রয়েড প্ল্যাটফর্ম লিঙ্কিং
       - name: Initialize Capacitor
         run: |
           npx cap init "Lexal Social" "com.lexalsocial.app" --web-dir=dist
           npx cap add android
 
+      # আপনার নতুন তৈরি করা জাভাস্ক্রিপ্ট সার্ভিস ও স্ক্রিনগুলোকে অ্যান্ড্রয়েড প্রজেক্টে সিঙ্ক করবে
       - name: Sync Code to Android
         run: npx cap sync android
 
+      # গ্রেডল ডুপ্লিকেট ফাইল ইরর ফিক্স মেকানিজম
       - name: Inject Strict Gradle Duplicate Fixes
         run: |
           cd android
@@ -52,12 +55,14 @@ jobs:
           echo "subprojects { project -> if (project.hasProperty('android')) { android { packagingOptions { resources { excludes += ['META-INF/搶otlin_module', 'META-INF/*'] } } } } }" >> build.gradle
           echo "allprojects { configurations.all { resolutionStrategy { eachDependency { details -> if (details.requested.group == 'org.jetbrains.kotlin') { details.useVersion '1.8.22' } } } } }" >> build.gradle
 
+      # এটি আপনার আসল অ্যান্ড্রয়েড ফোনে ইন্সটল করার জন্য লাইভ .apk ফাইল তৈরি করবে
       - name: Build Android Debug APK
         run: |
           cd android
           ./gradlew clean
           ./gradlew assembleDebug --no-daemon
 
+      # জেনারেট হওয়া APK ফাইলটি আপনার গিটহাবের 'Actions' ট্যাবে ডাউনলোডের জন্য আপলোড করবে
       - name: Upload Generated APK
         uses: actions/upload-artifact@v4
         with:
