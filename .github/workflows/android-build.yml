@@ -37,14 +37,18 @@ jobs:
       - name: Build Web Asset (Vite Production)
         run: npm run build
 
-      # ক্যপাসিটর কনফিগারেশন চেক এবং অ্যান্ড্রয়েড প্ল্যাটফর্ম ম্যানেজমেন্ট
+      # ক্যপাসিটর কনফিগারেশন চেক এবং অ্যান্ড্রয়েড প্ল্যাটফর্ম তৈরি
       - name: Initialize Capacitor
         run: |
           npx cap add android || true
 
-      # আপনার নতুন তৈরি করা জাভাস্ক্রিপ্ট সার্ভিস ও স্ক্রিনগুলোকে অ্যান্ড্রয়েড প্রজেক্টে সিঙ্ক করবে
+      # অ্যান্ড্রোয়েড ফোল্ডার ভ্যালিডেশন এবং সোর্স কোড সিঙ্কিং
       - name: Sync Code to Android
-        run: npx cap sync android
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+          npx cap sync android
 
       # গ্রেডল ডুপ্লিকেট ফাইল ইরর ফিক্স মেকানিজম
       - name: Inject Strict Gradle Duplicate Fixes
