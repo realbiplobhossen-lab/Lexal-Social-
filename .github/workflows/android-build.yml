@@ -21,37 +21,35 @@ jobs:
         with:
           node-version: 20
 
-      # গিটহাবের লিনাক্স সিস্টেমে আগে থেকে ইনস্টল থাকা ডিফল্ট জাভাকে সরাসরি সক্রিয় করা
+      # উবুন্টু সার্ভারের নিজস্ব জাভা ১৭ পাথ সেট করা
       - name: Locate and Set Default System Java
         run: |
           echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
           echo "PATH=$JAVA_HOME_17_X64/bin:$PATH" >> $GITHUB_ENV
 
+      # অফিশিয়াল অ্যান্ড্রয়েড SDK এনভায়রনমেন্ট সেটআপ
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      # package.json দেখে প্রয়োজনীয় প্লাগইন ও লাইব্রেরি ইন্সটল
       - name: Install Project Dependencies
         run: npm install
 
+      # আপনার কোড প্রোডাকশন রেডি করে 'dist' ফোল্ডার তৈরি
       - name: Build Web Asset (Vite Production)
         run: npm run build
 
+      # ফ্রেশ অ্যান্ড্রয়েড নেটিভ ডিরেক্টরি জেনারেট করা
       - name: Generate Native Android Directory
         run: |
           npx cap add android || true
 
+      # কোডগুলোকে অ্যান্ড্রয়েড প্রজেক্টে পুশ ও সিঙ্ক করা
       - name: Sync Code to Android
         run: |
           npx cap sync android
 
-      - name: Inject Strict Gradle Duplicate Fixes
-        run: |
-          cd android
-          sed -i '/android {/a \    packagingOptions {\n        resources {\n            excludes += ["META-INF/*.kotlin_module", "META-INF/kotlin-stdlib-jdk7.kotlin_module", "META-INF/kotlin-stdlib-jdk8.kotlin_module", "META-INF/kotlin-stdlib.kotlin_module"]\n        }\n    }' app/build.gradle
-          echo "subprojects { project -> if (project.hasProperty('android')) { android { packagingOptions { resources { excludes += ['META-INF/搶otlin_module', 'META-INF/*'] } } } } }" >> build.gradle
-          echo "allprojects { configurations.all { resolutionStrategy { eachDependency { details -> if (details.requested.group == 'org.jetbrains.kotlin') { details.useVersion '1.8.22' } } } } }" >> build.gradle
-
-      # সরাসরি সিস্টেম লেভেল জাভা এনভায়রনমেন্ট পুশ করে গ্রেডল বিল্ড রান করা
+      # ফোনের জন্য আসল .apk ফাইল তৈরি করা (কোনো স্ক্রিপ্ট ইনজেকশন ছাড়া একদম ফ্রেশ বিল্ড)
       - name: Build Android Debug APK
         run: |
           cd android
@@ -61,6 +59,7 @@ jobs:
         env:
           JAVA_HOME: ${{ env.JAVA_HOME }}
 
+      # জেনারেট হওয়া APK ফাইলটি ডাউনলোডের জন্য অ্যাকশনস ট্যাবে আপলোড করা
       - name: Upload Generated APK
         uses: actions/upload-artifact@v4
         with:
