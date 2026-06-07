@@ -30,24 +30,23 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Core Dependencies
+      - name: Install Project Dependencies
         run: npm install
 
-      # ক্যপাসিটরের জন্য প্রয়োজনীয় প্লাগইন গিটহাব রানারে ইনস্টল করা
-      - name: Install Capacitor CLI & Android Packages
+      # ক্যপাসিটর কোর এবং অ্যান্ড্রয়েড নেটিভ প্যাকেজ আলাদাভাবে নিশ্চিত করা
+      - name: Install Capacitor Core Packages
         run: npm install @capacitor/core @capacitor/cli @capacitor/android
 
-      # এটি আপনার নতুন ডাইনামিক .jsx এবং .css ফাইলগুলোকে 'dist' ফোল্ডারে বিল্ড করবে
+      # আপনার .jsx এবং .css ফাইলগুলোকে 'dist' ফোল্ডারে প্রোডাকশন বিল্ড করা
       - name: Build Web Asset (Vite Production)
         run: npm run build
 
-      # ক্যপাসিটর কনফিগারেশন এবং ফ্রেশ অ্যান্ড্রোয়েড ডিরেক্টরি তৈরি
-      - name: Initialize Capacitor & Add Android Platform
+      # ক্যপাসিটর অ্যান্ড্রয়েড প্ল্যাটফর্ম স্ক্র্যাচ থেকে জেনারেট করা
+      - name: Generate Native Android Directory
         run: |
-          npx cap init "Lexal Social" "com.lexalsocial.app" --web-dir=dist || true
           npx cap add android || true
 
-      # সোর্স কোড অ্যান্ড্রয়েড প্রজেক্টে সিঙ্ক করা
+      # সোর্স কোড অ্যান্ড্রয়েড নেটিভ প্রজেক্টে পুশ ও সিঙ্ক করা
       - name: Sync Code to Android
         run: npx cap sync android
 
@@ -59,14 +58,14 @@ jobs:
           echo "subprojects { project -> if (project.hasProperty('android')) { android { packagingOptions { resources { excludes += ['META-INF/搶otlin_module', 'META-INF/*'] } } } } }" >> build.gradle
           echo "allprojects { configurations.all { resolutionStrategy { eachDependency { details -> if (details.requested.group == 'org.jetbrains.kotlin') { details.useVersion '1.8.22' } } } } }" >> build.gradle
 
-      # এটি আপনার আসল অ্যান্ড্রয়েড ফোনে ইন্সটল করার জন্য লাইভ .apk ফাইল তৈরি করবে
+      # এটি ফোনের জন্য আসল .apk ফাইল তৈরি করবে
       - name: Build Android Debug APK
         run: |
           cd android
           ./gradlew clean
           ./gradlew assembleDebug --no-daemon
 
-      # জেনারেট হওয়া APK ফাইলটি ডাউনলোডের জন্য আপলোড করা
+      # জেনারেট হওয়া APK ফাইলটি ডাউনলোডের জন্য অ্যাকশনস ট্যাবে আপলোড করা
       - name: Upload Generated APK
         uses: actions/upload-artifact@v4
         with:
