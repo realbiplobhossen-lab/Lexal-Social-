@@ -1,5 +1,4 @@
-export const CLOUD_NAME =
-"dyuk0cb8t";
-
-export const UPLOAD_PRESET =
-"lexal_social_upload";
+export const cloudinaryConfig = {
+  cloudName: "dyuk0cb8t",
+  uploadPreset: "lexal_social_upload"
+};
