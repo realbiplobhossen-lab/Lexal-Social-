@@ -21,34 +21,30 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Java (JDK 17)
+      - name: Set up JDK 17 (Standard Android Build)
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
-          java-version: '17' # ক্যপাসিটর এবং গ্রেডলের জন্য ১৭ সবচেয়ে স্ট্যাবল
+          distribution: 'temurin' # জ্যুলু বাদ দিয়ে টেমুরিন ব্যবহার করা হয়েছে যা পাথ অটো-কনফিগ করে
+          java-version: '17'
+          cache: 'gradle'
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      # এটি আপনার নতুন package.json দেখে ক্যাপাসিটরসহ সব প্যাকেজ ইন্সটল করবে
       - name: Install Project Dependencies
         run: npm install
 
-      # এটি আপনার .jsx এবং .css ফাইলগুলোকে 'dist' ফোল্ডারে প্রোডাকশন বিল্ড করবে
       - name: Build Web Asset (Vite Production)
         run: npm run build
 
-      # ক্যপাসিটর অ্যান্ড্রয়েড প্ল্যাটফর্ম ফোল্ডার তৈরি (ফোর্স জেনারেশন)
       - name: Generate Native Android Directory
         run: |
           npx cap add android || true
 
-      # সোর্স কোড অ্যান্ড্রয়েড নেティブ প্রজেক্টে সিঙ্ক করা
       - name: Sync Code to Android
         run: |
           npx cap sync android
 
-      # গ্রেডল ডুপ্লিকেট ফাইল ইরর ফিক্স মেকানিজম
       - name: Inject Strict Gradle Duplicate Fixes
         run: |
           cd android
@@ -56,15 +52,14 @@ jobs:
           echo "subprojects { project -> if (project.hasProperty('android')) { android { packagingOptions { resources { excludes += ['META-INF/搶otlin_module', 'META-INF/*'] } } } } }" >> build.gradle
           echo "allprojects { configurations.all { resolutionStrategy { eachDependency { details -> if (details.requested.group == 'org.jetbrains.kotlin') { details.useVersion '1.8.22' } } } } }" >> build.gradle
 
-      # JAVA_HOME পাথ ফিক্স এবং ফোনের জন্য আসল .apk ফাইল তৈরি করা
+      # স্বয়ংক্রিয় জাভা হোম পাথ ডিটেকশন ও গ্র্যাডল বিল্ড
       - name: Build Android Debug APK
         run: |
           cd android
-          export JAVA_HOME=$JAVA_HOME_17_X64
+          chmod +x gradlew
           ./gradlew clean
           ./gradlew assembleDebug --no-daemon
 
-      # জেনারেট হওয়া APK ফাইলটি ডাউনলোডের জন্য অ্যাকশনস ট্যাবে আপলোড করা
       - name: Upload Generated APK
         uses: actions/upload-artifact@v4
         with:
