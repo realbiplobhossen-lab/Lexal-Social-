@@ -1,26 +1,27 @@
 import React from 'react';
 
-function BottomNav({ activeScreen, setActiveScreen }) {
-  const menus = [
-    { id: 'home', label: '🏠 ফিড' },
-    { id: 'search', label: '🔍 সার্চ' },
-    { id: 'create', label: '➕ পোস্ট' },
-    { id: 'chat', label: '💬 মেসেজ' },
-    { id: 'profile', label: '👤 প্রোফাইল' }
+export default function BottomNav({ currentScreen, setCurrentScreen }) {
+  // ন্যাভবারের ৫টি অপশন প্রফেশনাল আইকন টেক্সটসহ সাজানো হলো
+  const navItems = [
+    { id: 'home', label: 'ফিড', icon: '🏠' },
+    { id: 'chat', label: 'চ্যাট', icon: '💬' },
+    { id: 'friends', label: 'বন্ধুরা', icon: '👥' },
+    { id: 'notifications', label: 'নোটিফিকেশন', icon: '🔔' },
+    { id: 'profile', label: 'প্রোফাইল', icon: '👤' }
   ];
 
   return (
-    <nav className="lexal-bottom-nav">
-      {menus.map(m => (
-        <button 
-          key={m.id} 
-          onClick={() => setActiveScreen(m.id)}
-          className={`nav-btn ${activeScreen === m.id ? 'active' : ''}`}
+    <div className="bottom-navbar">
+      {navItems.map((item) => (
+        <button
+          key={item.id}
+          className={`nav-item ${currentScreen === item.id ? 'active' : ''}`}
+          onClick={() => setCurrentScreen(item.id)}
         >
-          {m.label}
+          <span className="nav-icon">{item.icon}</span>
+          <span>{item.label}</span>
         </button>
       ))}
-    </nav>
+    </div>
   );
 }
-export default BottomNav;
