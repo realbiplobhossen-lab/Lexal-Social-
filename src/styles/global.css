@@ -1,38 +1,281 @@
-body { background-color: #070A12; color: #F3F4F6; font-family: system-ui, sans-serif; margin: 0; }
-.lexal-app-container { min-height: 100vh; position: relative; padding-bottom: 80px; }
-.lexal-navbar { background: rgba(17, 24, 39, 0.85); backdrop-filter: blur(10px); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1E293B; position: sticky; top: 0; z-index: 1000; }
-.nav-logo { font-size: 22px; font-weight: 800; background: linear-gradient(45deg, #38BDF8, #818CF8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; }
-.logout-btn { background: #EF4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
-.main-viewport { max-width: 600px; margin: 0 auto; padding: 15px; }
-.post-card { background: #111827; border: 1px solid #1E293B; border-radius: 16px; padding: 18px; margin-bottom: 16px; box-shadow: 0 4px 30px rgba(0,0,0,0.3); }
-.post-media { width: 100%; border-radius: 12px; margin-top: 10px; max-height: 380px; object-fit: cover; }
-.post-actions { display: flex; gap: 20px; margin-top: 10px; border-top: 1px solid #1E293B; paddingTop: 10px; }
-.post-actions button { background: none; border: none; color: #9CA3AF; cursor: pointer; font-weight: 600; }
-.lexal-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(17, 24, 39, 0.95); backdrop-filter: blur(10px); display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #1E293B; z-index: 2000; }
-.nav-btn { background: none; border: none; color: #9CA3AF; cursor: pointer; display: flex; flex-direction: column; align-items: center; font-size: 11px; }
-.nav-btn.active { color: #38BDF8; font-weight: bold; }
-.auth-card { max-width: 400px; margin: 80px auto; padding: 30px; background: #111827; border-radius: 16px; border: 1px solid #1E293B; }
-.auth-card input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; background: #070A12; color: #fff; border: 1px solid #1E293B; box-sizing: border-box; }
-.auth-card button { width: 100%; padding: 12px; background: #2563EB; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-.auth-toggle-link { color: #38BDF8; display: block; text-align: center; margin-top: 15px; cursor: pointer; font-size: 13px; }
-.friend-chat-row { background: #111827; padding: 15px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; border: 1px solid #1E293B; }
-.online-tag { color: #10B981; font-size: 13px; }
-.chat-messages-area { height: 40vh; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; }
-.msg-bubble { padding: 10px 14px; border-radius: 12px; margin: 5px 0; max-width: 75%; }
-.msg-bubble.right { background: #0284C7; align-self: flex-end; color: white; }
-.msg-bubble.left { background: #1F2937; align-self: flex-start; }
-.chat-input-form { display: flex; gap: 10px; padding: 10px 0; }
-.chat-input-form input { flex: 1; padding: 10px; background: #070A12; border: 1px solid #1E293B; border-radius: 8px; color: white; }
-.chat-input-form button { background: #2563EB; color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; }
-.loader-overlay { display: flex; flex-direction: column; justify-content: center; align-items: center; height: '100vh'; background: #070A12; color: #38BDF8; height: 100vh; }
-.spinner { width: 40px; height: 40px; border: 4px solid #1E293B; border-top: 4px solid #38BDF8; border-radius: 50%; animation: spin 1s linear infinite; }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-.large-avatar { width: 70px; height: 70px; background: #38BDF8; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 28px; font-weight: bold; margin: 0 auto 15px auto; }
-.comment-box { background: #070A12; padding: 10px; border-radius: 8px; margin-top: 10px; }
-.comment-item { font-size: 13px; margin: 4px 0; border-bottom: 1px solid #1E293B; padding-bottom: 4px; }
-.comment-form { display: flex; gap: 5px; margin-top: 5px; }
-.comment-form input { flex: 1; background: #111827; border: 1px solid #1E293B; border-radius: 4px; color: white; padding: 6px; }
-.comment-form button { background: #10B981; color: white; border: none; padding: 0 10px; border-radius: 4px; font-size: 12px; }
-.story-card { width: 75px; height: 110px; background-size: cover; background-position: center; border-radius: 10px; flex-shrink: 0; background-color: #111827; border: 1px solid #1E293B; position: relative; display: flex; align-items: flex-end; padding: 6px; box-sizing: border-box; }
-.story-card span { font-size: 9px; font-weight: bold; color: white; text-shadow: 1px 1px 2px black; }
-.story-card.add-story { display: flex; justify-content: center; align-items: center; text-align: center; font-size: 12px; color: #38BDF8; cursor: pointer; }
+/* মডার্ন সোশ্যাল মিডিয়া থিম - গ্লোবাল সিএসএস */
+:root {
+  --primary-color: #4f46e5;
+  --primary-hover: #4338ca;
+  --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --text-main: #1f2937;
+  --text-muted: #6b7280;
+  --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
+  --border-radius: 16px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  background: var(--bg-gradient);
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+}
+
+#root {
+  width: 100%;
+  max-width: 480px; /* মোবাইল স্ক্রিনের পারফেক্ট ভিউপোর্ট */
+  background: #ffffff;
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 20px rgba(0,0,0,0.05);
+  padding-bottom: 75px; /* বটম ন্যাভবারের জন্য গ্যাপ */
+}
+
+/* টপ হেডার বার */
+.app-header {
+  background: var(--card-bg);
+  backdrop-filter: blur(10px);
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.app-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--primary-color);
+  letter-spacing: -0.5px;
+}
+
+/* স্ক্রিন কন্টেইনার */
+.screen-container {
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* মডার্ন ইনপুট ও টেক্সট-এরিয়া বক্স */
+textarea, input[type="text"], input[type="email"], input[type="password"] {
+  width: 100%;
+  padding: 14px;
+  background: #f3f4f6;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius);
+  font-size: 15px;
+  color: var(--text-main);
+  transition: all 0.3s ease;
+  outline: none;
+  margin-bottom: 12px;
+}
+
+textarea:focus, input:focus {
+  border-color: var(--primary-color);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+}
+
+/* গ্লোসি এবং প্রিমিয়াম বাটন */
+button {
+  width: 100%;
+  padding: 14px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+}
+
+button:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+/* পোস্ট মেকার বক্স (Home Feed) */
+.create-post-box {
+  background: #ffffff;
+  padding: 16px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  border: 1px solid rgba(0,0,0,0.03);
+}
+
+.create-post-box textarea {
+  height: 90px;
+  resize: none;
+}
+
+/* সোশ্যাল ফিড কার্ড ডিজাইন */
+.post-card {
+  background: #ffffff;
+  border-radius: var(--border-radius);
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(0,0,0,0.02);
+}
+
+.post-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.post-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-right: 12px;
+}
+
+.post-user-info h3 {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.post-user-info span {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.post-content {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-main);
+  margin-bottom: 14px;
+}
+
+.post-actions {
+  display: flex;
+  border-top: 1px solid #f3f4f6;
+  padding-top: 12px;
+  justify-content: space-around;
+}
+
+.action-btn {
+  background: transparent;
+  color: var(--text-muted);
+  box-shadow: none;
+  padding: 6px 12px;
+  width: auto;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.action-btn:hover {
+  background: #f3f4f6;
+  color: var(--primary-color);
+  transform: none;
+}
+
+/* মডার্ন ফ্লোটিং বটম নেভিগেশন বার */
+.bottom-navbar {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  max-width: 480px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0;
+  border-top: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.03);
+  z-index: 1000;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+  background: transparent;
+  box-shadow: none;
+  width: auto;
+  padding: 5px;
+}
+
+.nav-item.active {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.nav-icon {
+  font-size: 20px;
+  margin-bottom: 3px;
+}
+
+/* প্রফেশনাল প্রোফাইল স্ক্রিন কার্ড */
+.profile-card {
+  text-align: center;
+  background: #ffffff;
+  padding: 30px 20px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+}
+
+.profile-avatar-large {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: var(--bg-gradient);
+  margin: 0 auto 15px;
+  border: 4px solid white;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: var(--primary-color);
+}
+
+.profile-stats {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.stat-box h4 {
+  font-size: 18px;
+  color: var(--text-main);
+}
+
+.stat-box p {
+  font-size: 13px;
+  color: var(--text-muted);
+                             }
