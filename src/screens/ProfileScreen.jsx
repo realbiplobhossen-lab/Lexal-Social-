@@ -1,22 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import { profileService } from '../services/profileService';
+import React from 'react';
+import { auth } from '../config/firebase.js';
 
-function ProfileScreen({ targetUid }) {
-  const [prof, setProf] = useState(null);
+export default function ProfileScreen() {
+  const user = auth.currentUser;
 
-  useEffect(() => {
-    profileService.getProfile(targetUid).then(setProf);
-  }, [targetUid]);
+  const handleLogout = () => {
+    auth.signOut()
+      .then(() => alert("সফলভাবে লগআউট হয়েছে!"))
+      .catch((err) => alert(err.message));
+  };
 
   return (
-    <div className="profile-container" style={{ textAlign: 'center', padding: '20px', background: '#111827', borderRadius: '16px' }}>
-      <div className="large-avatar">{prof?.fullName?.[0].toUpperCase()}</div>
-      <h2>{prof?.fullName}</h2>
-      <p style={{ color: '#9CA3AF' }}>{prof?.bio}</p>
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px', borderTop: '1px solid #1E293B', paddingTop: '15px' }}>
-        <div><h3>{prof?.friends?.length || 0}</h3><span>বন্ধুরা</span></div>
+    <div className="screen-container">
+      <div className="profile-card">
+        <div className="profile-avatar-large">
+          {user?.email ? user.email.charAt(0).toUpperCase() : '👤'}
+        </div>
+        <h2 style={{ marginBottom: '5px' }}>{user?.displayName || user?.email?.split('@')[0] || "ইউজার নাম"}</h2>
+        <p style={{ color: '#6b7280', fontSize: '14px' }}>{user?.email || "ইউজার ইমেইল"}</p>
+        
+        <div className="profile-stats">
+          <div className="stat-box">
+            <h4>১</h4>
+            <p>প্রোফাইল</p>
+          </div>
+          <div className="stat-box">
+            <h4>একটিভ</h4>
+            <p>স্ট্যাটাস</p>
+          </div>
+        </div>
       </div>
+
+      <button onClick={handleLogout} style={{ background: '#dc2626', marginTop: '20px' }}>
+        লগআউট করুন 🚪
+      </button>
     </div>
   );
 }
-export default ProfileScreen;
