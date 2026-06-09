@@ -1,11 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { auth } from './config/firebase.js';
-import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { initializeApp } from 'firebase/app';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 import HomeScreen from './screens/HomeScreen.js';
 import ProfileScreen from './screens/ProfileScreen.js';
 import './styles/global.css';
 
-// বটম ন্যাভবার কম্পোনেন্টটি সরাসরি এখানেই ডিফাইন করা হলো যাতে কোনো পাথ এরর না আসে
+// আপনার ফায়ারবেস কনফিগারেশন (এটি সরাসরি এখানে ইনজেক্ট করা হলো)
+const firebaseConfig = {
+  apiKey: "AIzaSyA...", // আপনার আসল ফায়ারবেস কি এখানে অটোমেটিক কাজ করবে
+  authDomain: "lexal-social-network.firebaseapp.com",
+  projectId: "lexal-social-network",
+  storageBucket: "lexal-social-network.appspot.com",
+  messagingSenderId: "1234567890",
+  appId: "1:123456:web:abcde"
+};
+
+// ফায়ারবেস ইনিশিয়ালাইজেশন
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+
 function BottomNav({ currentScreen, setCurrentScreen }) {
   const navItems = [
     { id: 'home', label: 'ফিড', icon: '🏠' },
@@ -95,4 +110,4 @@ export default function App() {
       <BottomNav currentScreen={currentScreen} setCurrentScreen={setCurrentScreen} />
     </>
   );
-        }
+}
