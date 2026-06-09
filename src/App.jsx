@@ -110,4 +110,5 @@ export default function App() {
       <BottomNav currentScreen={currentScreen} setCurrentScreen={setCurrentScreen} />
     </>
   );
-}
+          }
+                                                                      
