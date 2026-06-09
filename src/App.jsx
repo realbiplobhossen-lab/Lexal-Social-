@@ -1,10 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from './config/firebase.js';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import BottomNav from './components/BottomNav.js';
 import HomeScreen from './screens/HomeScreen.js';
 import ProfileScreen from './screens/ProfileScreen.js';
 import './styles/global.css';
+
+// বটম ন্যাভবার কম্পোনেন্টটি সরাসরি এখানেই ডিফাইন করা হলো যাতে কোনো পাথ এরর না আসে
+function BottomNav({ currentScreen, setCurrentScreen }) {
+  const navItems = [
+    { id: 'home', label: 'ফিড', icon: '🏠' },
+    { id: 'chat', label: 'চ্যাট', icon: '💬' },
+    { id: 'friends', label: 'বন্ধুরা', icon: '👥' },
+    { id: 'notifications', label: 'নোটিফিকেশন', icon: '🔔' },
+    { id: 'profile', label: 'প্রোফাইল', icon: '👤' }
+  ];
+
+  return (
+    <div className="bottom-navbar">
+      {navItems.map((item) => (
+        <button
+          key={item.id}
+          className={`nav-item ${currentScreen === item.id ? 'active' : ''}`}
+          onClick={() => setCurrentScreen(item.id)}
+          style={{ background: 'transparent', boxShadow: 'none', width: 'auto', padding: '5px', color: currentScreen === item.id ? '#4f46e5' : '#6b7280' }}
+        >
+          <span style={{ fontSize: '20px', display: 'block', marginBottom: '3px' }}>{item.icon}</span>
+          <span style={{ fontSize: '11px', fontWeight: currentScreen === item.id ? '600' : '500' }}>{item.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -55,7 +81,7 @@ export default function App() {
     <>
       <div className="app-header">
         <h1>Lexal Social</h1>
-        <span style={{ fontSize: '20px' }}>🔔</span>
+        <span style={{ fontSize: '20px', cursor: 'pointer' }} onClick={() => alert("কোনো নতুন নোটিফিকেশন নেই")}>🔔</span>
       </div>
       
       {currentScreen === 'home' && <HomeScreen />}
@@ -69,4 +95,4 @@ export default function App() {
       <BottomNav currentScreen={currentScreen} setCurrentScreen={setCurrentScreen} />
     </>
   );
-}
+        }
