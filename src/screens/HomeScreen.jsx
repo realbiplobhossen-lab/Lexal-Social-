@@ -7,7 +7,7 @@ export default function HomeScreen() {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // ফায়ারবেস ডাটাবেজ থেকে লাইভ পোস্ট লোড করার রিয়েল-টাইম লজিক
+  // ফায়ারবেস থেকে লাইভ পোস্ট ডাটা রিড করার রিয়েল-টাইম লজিক
   useEffect(() => {
     const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -19,7 +19,7 @@ export default function HomeScreen() {
     return () => unsubscribe();
   }, []);
 
-  // বাটনে ক্লিক করলে আসল পোস্ট ডাটাবেজে সেভ হওয়ার লজিক
+  // ডাটাবেজে পোস্ট সাবমিট করার লজিক
   const handlePost = async () => {
     if (!text.trim()) {
       alert("দয়া করে কিছু লিখুন!");
@@ -43,7 +43,7 @@ export default function HomeScreen() {
 
   return (
     <div className="screen-container">
-      {/* আসল পোস্ট মেকার বক্স */}
+      {/* পোস্ট তৈরি করার বক্স */}
       <div className="create-post-box">
         <textarea 
           value={text} 
@@ -55,7 +55,7 @@ export default function HomeScreen() {
         </button>
       </div>
 
-      {/* লাইভ পোস্ট ফিড লিস্ট */}
+      {/* লাইভ পোস্ট ফিড লিস্ট (আলাদা ফাইল ছাড়া সরাসরি এখানেই ডিজাইন করা) */}
       <div className="posts-list">
         {posts.length === 0 ? (
           <p style={{ textAlign: 'center', color: '#6b7280', marginTop: '20px' }}>এখনো কোনো পোস্ট নেই। প্রথম পোস্টটি আপনিই করুন!</p>
@@ -64,7 +64,7 @@ export default function HomeScreen() {
             <div key={post.id} className="post-card">
               <div className="post-header">
                 <div className="post-avatar">
-                  {post.userName.charAt(0).toUpperCase()}
+                  {post.userName ? post.userName.charAt(0).toUpperCase() : '👤'}
                 </div>
                 <div className="post-user-info">
                   <h3>{post.userName}</h3>
@@ -72,7 +72,12 @@ export default function HomeScreen() {
                 </div>
               </div>
               <div className="post-content">
-                <p>{post.content}</p>
+                <p style={{ whiteSpace: 'pre-wrap' }}>{post.content}</p>
+              </div>
+              {/* লাইক ও কমেন্টের ডাইনামিক বাটন অ্যাকশন */}
+              <div className="post-actions">
+                <button className="action-btn" onClick={() => alert("লাইক ফিচারটি আগামী আপডেটে যুক্ত হবে!")}>❤️ লাইক</button>
+                <button className="action-btn" onClick={() => alert("কমেন্ট ফিচারটি আগামী আপডেটে যুক্ত হবে!")}>💬 কমেন্ট</button>
               </div>
             </div>
           ))
@@ -80,4 +85,5 @@ export default function HomeScreen() {
       </div>
     </div>
   );
-}
+                  }
+
