@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { auth } from './firebase.js'; 
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 
-// সকল লোকাল ফাইল ইম্পোর্ট পাথ ফিক্স
 import HomeScreen from './HomeScreen.js';
 import CreatePostScreen from './CreatePostScreen.js';
 import ProfileScreen from './ProfileScreen.js';
