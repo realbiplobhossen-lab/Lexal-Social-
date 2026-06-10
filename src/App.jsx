@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db } from './firebase'; 
+import { auth } from './firebase.js'; 
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 
-// সকল ডাইনামিক স্ক্রিন ও কম্পোনেন্ট ইম্পোর্ট
-import HomeScreen from './HomeScreen';
-import CreatePostScreen from './CreatePostScreen';
-import ProfileScreen from './ProfileScreen';
-import SearchScreen from './SearchScreen';
-import ChatScreen from './ChatScreen';
-import LoginScreen from './LoginScreen';
-import RegisterScreen from './RegisterScreen';
-import BottomNav from './BottomNav';
-import Navbar from './Navbar';
+// সকল লোকাল ফাইল ইম্পোর্ট পাথ ফিক্স
+import HomeScreen from './HomeScreen.js';
+import CreatePostScreen from './CreatePostScreen.js';
+import ProfileScreen from './ProfileScreen.js';
+import SearchScreen from './SearchScreen.js';
+import ChatScreen from './ChatScreen.js';
+import LoginScreen from './LoginScreen.js';
+import RegisterScreen from './RegisterScreen.js';
+import BottomNav from './BottomNav.jsx.txt';
+import Navbar from './Navbar.jsx.txt';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [screen, setScreen] = useState('home'); // home, create, profile, search, chat
-  const [activeChatId, setActiveChatId] = useState('global_chat'); // ডিফল্ট চ্যাট রুম আইডি
+  const [screen, setScreen] = useState('home'); 
+  const [activeChatId, setActiveChatId] = useState('global_chat'); 
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -35,7 +35,6 @@ export default function App() {
     );
   }
 
-  // ইউজার লগইন না থাকলে অথেনটিকেশন স্ক্রিন দেখানো হবে
   if (!user) {
     return (
       <div style={styles.authContainer}>
@@ -55,7 +54,6 @@ export default function App() {
     );
   }
 
-  // ডাইনামিক স্ক্রিন রেন্ডারার লজিক (বাটন ক্লিকে যা পরিবর্তন হবে)
   const renderScreen = () => {
     switch (screen) {
       case 'home':
@@ -77,7 +75,6 @@ export default function App() {
     <div style={styles.container}>
       <Navbar />
       
-      {/* স্ট্যাটিক শর্টকাট হেডার বার যা চ্যাট ও সার্চ ওপেন করবে */}
       <div style={styles.topShortcutBar}>
         <button style={screen === 'chat' ? styles.activeTopBtn : styles.topBtn} onClick={() => { setScreen('chat'); setActiveChatId('global_chat'); }}>
           💬 Chats
@@ -90,12 +87,10 @@ export default function App() {
         </button>
       </div>
 
-      {/* ডাইনামিক কন্টেন্ট এরিয়া */}
       <div style={styles.contentArea}>
         {renderScreen()}
       </div>
 
-      {/* নেভিগেশন বার যা পেজ পরিবর্তন নিয়ন্ত্রণ করবে */}
       <BottomNav setPage={setScreen} currentPage={screen} />
     </div>
   );
@@ -112,4 +107,3 @@ const styles = {
   logoutBtn: { background: '#da3633', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' },
   contentArea: { padding: '10px' }
 };
-      
