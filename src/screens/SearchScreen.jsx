@@ -26,7 +26,7 @@ export default function SearchScreen() {
       setUsers(snapshot.docs.map(d => d.data()));
     } catch (err) {
       console.error("Search error: ", err);
-    } fileStatus: {
+    } finally {
       setLoading(false);
     }
   };
@@ -52,3 +52,4 @@ export default function SearchScreen() {
     </div>
   );
 }
+
