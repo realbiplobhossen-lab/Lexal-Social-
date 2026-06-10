@@ -1,36 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { commentService } from '../services/commentService';
+import React, { useState } from "react";
+import { auth } from "./firebase";
+import { addComment } from "./commentService";
 
-function CommentBox({ postId, currentUser }) {
-  const [comments, setComments] = useState([]);
-  const [text, setText] = useState('');
+export default function CommentBox({ postId }) {
+  const [text, setText] = useState("");
 
-  useEffect(() => {
-    const unsub = commentService.listenComments(postId, setComments);
-    return () => unsub();
-  }, [postId]);
-
-  const submitComment = (e) => {
-    e.preventDefault();
+  const submit = async () => {
     if (!text.trim()) return;
-    commentService.addComment(postId, currentUser.uid, currentUser.displayName || "ব্যবহারকারী", text);
-    setText('');
+    if (!auth.currentUser) {
+      alert("Please login to comment");
+      return;
+    }
+
+    try {
+      await addComment(postId, auth.currentUser.uid, text);
+      setText("");
+    } catch (error) {
+      alert("Comment failed: " + error.message);
+    }
   };
 
   return (
-    <div className="comment-box">
-      <div className="comment-list">
-        {comments.map((c, i) => (
-          <div key={i} className="comment-item">
-            <strong>{c.author}:</strong> <span>{c.text}</span>
-          </div>
-        ))}
-      </div>
-      <form onSubmit={submitComment} className="comment-form">
-        <input type="text" value={text} onChange={e=>setText(e.target.value)} placeholder="একটি মন্তব্য লিখুন..." />
-        <button type="submit">Send</button>
-      </form>
+    <div className="comment-box" style={{ display: "flex", marginTop: "10px" }}>
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Write a comment..."
+        style={{ flex: 1, padding: "8px", borderRadius: "4px 0 0 4px", border: "1px solid #444", background: "#161B22", color: "#fff" }}
+      />
+      <button onClick={submit} style={{ padding: "8px 15px", background: "#21262D", color: "#58A6FF", border: "1px solid #444", borderRadius: "0 4px 4px 0" }}>
+        Send
+      </button>
     </div>
   );
 }
-export default CommentBox;
