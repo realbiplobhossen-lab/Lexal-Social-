@@ -1,31 +1,15 @@
-import { db } from '../config/firebase';
-import { collection, addDoc, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "./firebase";
 
-export const postService = {
-  createPost: async (userId, userName, text, mediaUrl = null, mediaType = 'text') => {
-    return await addDoc(collection(db, "posts"), {
-      uid: userId,
-      author: userName,
-      content: text,
-      mediaUrl: mediaUrl,
-      mediaType: mediaType,
-      createdAt: Date.now(),
-      likes: [],
-      shares: 0
-    });
-  },
-  getLiveFeed: (callback) => {
-    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-    return onSnapshot(q, (snapshot) => {
-      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
-  },
-  deletePost: async (postId) => {
-    await deleteDoc(doc(db, "posts", postId));
-  },
-  toggleLike: async (postId, userId, hasLiked) => {
-    const ref = doc(db, "posts", postId);
-    await updateDoc(ref, { likes: hasLiked ? arrayRemove(userId) : arrayUnion(userId) });
-  }
-};
-
+export async function createPost(uid, text, imageUrl) {
+  await addDoc(collection(db, "posts"), {
+    uid,
+    text,
+    imageUrl,
+    likes: 0,
+    comments: 0,
+    hidden: false,
+    moderated: false,
+    createdAt: serverTimestamp()
+  });
+}
