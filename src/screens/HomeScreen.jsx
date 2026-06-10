@@ -1,72 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { db, auth } from '../App.jsx';
-import { collection, addDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
+import React from "react";
 
-export default function HomeScreen() {
-  const [posts, setPosts] = useState([]);
-  const [text, setText] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!db) return;
-    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setPosts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    }, (error) => {
-      console.error(error);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handlePost = async () => {
-    if (!text.trim()) return alert("দয়া করে কিছু লিখুন!");
-    setLoading(true);
-    try {
-      await addDoc(collection(db, "posts"), {
-        uid: auth.currentUser?.uid || "anonymous",
-        userName: auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || "ব্যবহারকারী",
-        content: text,
-        createdAt: new Date().toISOString()
-      });
-      setText('');
-    } catch (error) {
-      alert(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+export default function HomeScreen({ user, userData, setActiveScreen }) {
   return (
-    <div className="screen-container">
-      <div className="create-post-box">
-        <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="আজকে আপনার মনে কি চলছে? এখানে লিখুন..." />
-        <button onClick={handlePost} disabled={loading}>{loading ? "পোস্ট হচ্ছে..." : "পোস্ট করুন 🚀"}</button>
-      </div>
+    <div className="home-screen" style={{ textAlign: "center", padding: "20px" }}>
+      <h2>স্বাগতম, {userData?.name || user?.email || "ব্যবহারকারী"}!</h2>
+      <p>আপনার সোশ্যাল ড্যাশবোর্ড এখন সম্পূর্ণ ডাইনামিক।</p>
 
-      <div className="posts-list">
-        {posts.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#6b7280', marginTop: '20px' }}>এখনো কোনো পোস্ট নেই।</p>
-        ) : (
-          posts.map(post => (
-            <div key={post.id} className="post-card">
-              <div className="post-header">
-                <div className="post-avatar">{post.userName ? post.userName.charAt(0).toUpperCase() : '👤'}</div>
-                <div className="post-user-info">
-                  <h3>{post.userName}</h3>
-                  <span>{new Date(post.createdAt).toLocaleDateString('bn-BD')}</span>
-                </div>
-              </div>
-              <div className="post-content">
-                <p style={{ whiteSpace: 'pre-wrap' }}>{post.content}</p>
-              </div>
-              <div className="post-actions">
-                <button className="action-btn" onClick={() => alert("লাইক ফিচারটি আগামী আপডেটে যুক্ত হবে!")}>❤️ লাইক</button>
-                <button className="action-btn" onClick={() => alert("কমেন্ট ফিচারটি আগামী আপডেটে যুক্ত হবে!")}>💬 কমেন্ট</button>
-              </div>
-            </div>
-          ))
-        )}
+      <div style={{ display: "flex", flexDirection: "column", gap: "15px", marginTop: "30px" }}>
+        {/* এই বাটনে ক্লিক করলেই এখন সরাসরি চ্যাট ওপেন হবে */}
+        <button 
+          onClick={() => setActiveScreen("chat")} 
+          style={styles.actionBtn}
+        >
+          💬 বন্ধুদের সাথে চ্যাট করুন
+        </button>
+
+        <button 
+          onClick={() => setActiveScreen("profile")} 
+          style={{ ...styles.actionBtn, backgroundColor: "#6c757d" }}
+        >
+          👤 প্রোফাইল আপডেট করুন
+        </button>
       </div>
     </div>
   );
-                }
+}
+
+const styles = {
+  actionBtn: { padding: "15px", fontSize: "16px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }
+};
