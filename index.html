@@ -5,11 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lexal Social</title>
     <meta name="theme-color" content="#0B0E14">
-    <link rel="stylesheet" href="global.css">
+    <style>
+        /* CSS ফাইলটি বিল্ড টাইমে মিসিং দেখালে যেন ক্রাশ না করে, তাই গ্লোবাল স্টাইল এখানে ইনজেক্ট করে দেওয়া হলো */
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            background: #090D13;
+            color: #E6EDF3;
+        }
+        .page { padding: 20px; padding-bottom: 80px; }
+        .navbar { position: sticky; top: 0; background: #161B22; padding: 15px; font-size: 20px; font-weight: bold; z-index: 100; border-bottom: 1px solid #30363D; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; display: flex; justify-content: space-around; align-items: center; background: #161B22; border-top: 1px solid #30363D; }
+        .bottom-nav button { background: none; border: none; color: white; font-size: 16px; cursor: pointer; }
+        textarea { width: 100%; height: 120px; margin-bottom: 10px; }
+        button { padding: 10px 15px; cursor: pointer; }
+    </style>
 </head>
 <body style="margin: 0; background-color: #0B0E14;">
     <div id="root"></div>
     <div id="app"></div>
-    <script type="module" src="/index.jsx"></script>
+    
+    <script type="module" src="/index.jsx.txt"></script>
 </body>
 </html>
