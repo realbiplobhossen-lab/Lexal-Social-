@@ -1,62 +1,99 @@
-import React, { useState, useEffect } from 'react';
-import { chatService } from '../services/chatService';
-import { videoService } from '../services/videoService';
+import React, { useState, useEffect, useRef } from "react";
+import { db } from "../config/firebase"; // ফায়ারবেস কানেকশন
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "firebase/firestore";
 
-function ChatScreen({ user, userData }) {
-  const [activeFriend, setActiveFriend] = useState(null);
+export default function ChatScreen({ user, userData }) {
   const [messages, setMessages] = useState([]);
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
+  const messageEndRef = useRef(null);
 
+  // ১. ফায়ারস্টোর থেকে রিয়েল-টাইমে লাইভ মেসেজ রিড করা
   useEffect(() => {
-    if (!activeFriend) return;
-    const unsub = chatService.listenToChat(user.uid, activeFriend.uid, setMessages);
-    return () => unsub();
-  }, [activeFriend, user.uid]);
+    const q = query(collection(db, "chats"), orderBy("timestamp", "asc"));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgList = [];
+      snapshot.forEach((doc) => {
+        msgList.push({ id: doc.id, ...doc.data() });
+      });
+      setMessages(msgList);
+      // নতুন মেসেজ আসলে স্বয়ংক্রিয়ভাবে স্ক্রল নিচে নেমে যাবে
+      messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    });
 
-  const handleSend = (e) => {
+    return () => unsubscribe();
+  }, []);
+
+  // ২. ফায়ারস্টোরে ডাইনামিকালি মেসেজ পাঠানো
+  const handleSend = async (e) => {
     e.preventDefault();
     if (!text.trim()) return;
-    chatService.sendLiveMessage(user.uid, activeFriend.uid, text);
-    setText('');
+
+    try {
+      await addDoc(collection(db, "chats"), {
+        text: text,
+        senderId: user.uid,
+        senderName: userData?.name || user.email,
+        timestamp: serverTimestamp()
+      });
+      setText(""); // ইনপুট বক্স রিফ্রেশ করা
+    } catch (error) {
+      console.error("মেসেজ পাঠানো যায়নি: ", error);
+    }
   };
 
-  if (!activeFriend) {
-    return (
-      <div className="chat-screen">
-        <h3>💬 মেসেঞ্জার ইনবক্স</h3>
-        {userData?.friends?.length === 0 ? <p style={{ color: '#6B7280' }}>কোনো সক্রিয় বন্ধু পাওয়া যায়নি। সার্চ বার থেকে ফলো করুন।</p> :
-          userData?.friends?.map(fUid => (
-            <div key={fUid} onClick={() => setActiveFriend({ uid: fUid, fullName: "অনলাইন ব্যবহারকারী" })} className="friend-chat-row">
-              <strong>👤 ইউজার ({fUid.substring(0,5)})</strong>
-              <span className="online-tag">🟢 অনলাইন</span>
-            </div>
-          ))
-        }
-      </div>
-    );
-  }
-
   return (
-    <div className="chat-window">
-      <div className="chat-window-header">
-        <strong>{activeFriend.fullName}</strong>
-        <div className="call-actions">
-          <span onClick={() => videoService.initializeLiveCall(activeFriend.uid)}>📞</span>
-          <button onClick={() => setActiveFriend(null)}>Back</button>
-        </div>
+    <div className="chat-screen" style={styles.chatContainer}>
+      {/* মেসেজ প্রদর্শনের জায়গা */}
+      <div style={styles.messageArea}>
+        {messages.map((msg) => {
+          const isMe = msg.senderId === user.uid;
+          return (
+            <div 
+              key={msg.id} 
+              style={{
+                ...styles.bubbleContainer,
+                justifyContent: isMe ? "flex-end" : "flex-start"
+              }}
+            >
+              <div style={{
+                ...styles.msgBubble,
+                backgroundColor: isMe ? "#007bff" : "#e4e6eb",
+                color: isMe ? "#fff" : "#000",
+              }}>
+                <small style={{ fontSize: "10px", display: "block", opacity: 0.8 }}>
+                  {msg.senderName}
+                </small>
+                <span>{msg.text}</span>
+              </div>
+            </div>
+          );
+        })}
+        <div ref={messageEndRef} />
       </div>
-      <div className="chat-messages-area">
-        {messages.map((m, i) => (
-          <div key={i} className={`msg-bubble ${m.senderUid === user.uid ? 'right' : 'left'}`}>
-            {m.text}
-          </div>
-        ))}
-      </div>
-      <form onSubmit={handleSend} className="chat-input-form">
-        <input type="text" value={text} onChange={e=>setText(e.target.value)} placeholder="মেসেজ লিখুন..." />
-        <button type="submit">পাঠান</button>
+
+      {/* মেসেজ ইনপুট ফর্ম */}
+      <form onSubmit={handleSend} style={styles.inputForm}>
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="মেসেজ লিখুন..."
+          style={styles.inputBox}
+        />
+        <button type="submit" style={styles.sendButton}>পাঠান</button>
       </form>
     </div>
   );
 }
-export default ChatScreen;
+
+const styles = {
+  chatContainer: { display: "flex", flexDirection: "column", height: "calc(100vh - 120px)" },
+  messageArea: { flex: 1, overflowY: "auto", padding: "10px", display: "flex", flexDirection: "column", gap: "10px" },
+  bubbleContainer: { display: "flex", width: "100%" },
+  msgBubble: { padding: "10px 14px", borderRadius: "15px", maxWidth: "75%", wordBreak: "break-word" },
+  inputForm: { display: "flex", padding: "10px", borderTop: "1px solid #ddd", backgroundColor: "#fff" },
+  inputBox: { flex: 1, padding: "12px", borderRadius: "20px", border: "1px solid #ccc", marginRight: "8px", fontSize: "16px" },
+  sendButton: { padding: "10px 20px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }
+};
+        
