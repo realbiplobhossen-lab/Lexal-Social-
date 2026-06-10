@@ -1,12 +1,9 @@
-import { db } from '../config/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "./firebase";
 
-export const profileService = {
-  getProfile: async (userId) => {
-    const snap = await getDoc(doc(db, "users", userId));
-    return snap.exists() ? snap.data() : null;
-  },
-  updateBio: async (userId, newBio) => {
-    await updateDoc(doc(db, "users", userId), { bio: newBio });
-  }
-};
+export async function updateProfilePhoto(uid, url) {
+  if (!uid || !url) return;
+  await updateDoc(doc(db, "users", uid), {
+    photoURL: url
+  });
+}
