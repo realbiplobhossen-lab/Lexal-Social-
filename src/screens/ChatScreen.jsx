@@ -1,79 +1,60 @@
-import React, { useState, useEffect, useRef } from "react";
-import { db } from "../config/firebase"; 
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import { onSnapshot } from "firebase/firestore";
+import { auth } from "./firebase";
+import { sendMessage, getMessagesQuery } from "./chatService";
 
-export default function ChatScreen({ user, userData }) {
+export default function ChatScreen({ chatId }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
-  const messageEndRef = useRef(null);
 
-  // ফায়ারস্টোর থেকে লাইভ (রিয়েল-টাইম) মেসেজ রিড করা
   useEffect(() => {
-    const q = query(collection(db, "chats"), orderBy("timestamp", "asc"));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgList = [];
-      snapshot.forEach((doc) => {
-        msgList.push({ id: doc.id, ...doc.data() });
-      });
-      setMessages(msgList);
-      // নতুন মেসেজ এলে অটো-স্ক্রল ডাউন
-      messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    });
+    if (!chatId) return;
+
+    const unsubscribe = onSnapshot(
+      getMessagesQuery(chatId),
+      (snapshot) => {
+        setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      },
+      (error) => console.error("Chat error:", error)
+    );
 
     return () => unsubscribe();
-  }, []);
+  }, [chatId]);
 
-  // ফায়ারস্টোরে ডাইনামিক মেসেজ পাঠানো
-  const handleSend = async (e) => {
-    e.preventDefault();
+  const submit = async () => {
     if (!text.trim()) return;
+    if (!auth.currentUser) return alert("Not Authenticated");
 
     try {
-      await addDoc(collection(db, "chats"), {
-        text: text,
-        senderId: user.uid,
-        senderName: userData?.name || user.email,
-        timestamp: serverTimestamp()
-      });
-      setText(""); 
-    } catch (error) {
-      console.error("মেসেজ পাঠানো যায়নি: ", error);
+      await sendMessage(chatId, auth.currentUser.uid, text.trim());
+      setText("");
+    } catch (err) {
+      alert("Failed to send: " + err.message);
     }
   };
 
   return (
-    <div className="chat-container">
-      {/* মেসেজ এরিয়া */}
-      <div className="message-area">
-        {messages.map((msg) => {
-          const isMe = msg.senderId === user.uid;
-          return (
-            <div 
-              key={msg.id} 
-              className={`bubble-wrapper ${isMe ? "me" : "others"}`}
-            >
-              <div className="msg-bubble">
-                <small className="sender-name">{msg.senderName}</small>
-                <span className="msg-text">{msg.text}</span>
-              </div>
-            </div>
-          );
-        })}
-        <div ref={messageEndRef} />
-      </div>
-
-      {/* মেসেজ পাঠানোর ইনপুট ফর্ম */}
-      <form onSubmit={handleSend} className="chat-input-form">
+    <div className="chat-screen" style={{ padding: "20px" }}>
+      <div className="messages-list" style={{ height: "70vh", overflowY: "auto", marginBottom: "20px" }}>
+        {messages.map(msg => (
+          <div key={msg.id} style={{ margin: "5px 0", textAlign: msg.senderId === auth.currentUser?.uid ? "right" : "left" }}>
+            <span style={{ fontSize: "12px", color: "#666" }}>{msg.senderName || msg.senderId}</span>
+            <p style={{ background: "#f1f1f1", padding: "8px", borderRadius: "8px", display: "inline-block", margin: "2px 0", color: "#000" }}>
+              {msg.text}
+            </p>
+          </div>
+        ))}\n      </div>
+      <div style={{ display: "flex" }}>
         <input
-          type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="মেসেজ লিখুন..."
-          className="chat-input-field"
+          placeholder="Type a message..."
+          style={{ flex: 1, padding: "10px", borderRadius: "4px 0 0 4px", border: "1px solid #ccc", color: "#000" }}
         />
-        <button type="submit" className="chat-send-btn">পাঠান</button>
-      </form>
+        <button onClick={submit} style={{ padding: "10px 20px", background: "#007bff", color: "#fff", border: "none", borderRadius: "0 4px 4px 0" }}>
+          Send
+        </button>
+      </div>
     </div>
   );
 }
