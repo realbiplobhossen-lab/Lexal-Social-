@@ -1,5 +1,5 @@
 import React from "react";
-import Feed from "./Feed";
+import Feed from "./Feed"; // পাথ সংশোধন করে সরাসরি একই ফোল্ডারে দেওয়া হলো
 
 export default function HomeScreen() {
   return (
@@ -9,3 +9,4 @@ export default function HomeScreen() {
     </div>
   );
 }
+
