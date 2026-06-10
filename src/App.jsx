@@ -39,44 +39,68 @@ export default function App() {
 
   return (
     <div className="app-container">
-      <header className="top-nav">
-        <button onClick={() => setActiveScreen("home")}>
+      {/* টপ ন্যাভিগেশন বার */}
+      <header className="top-nav" style={styles.topNav}>
+        <button 
+          onClick={() => setActiveScreen("home")} 
+          style={{...styles.navBtn, fontWeight: activeScreen === "home" ? "bold" : "normal"}}
+        >
           🏠 হোম
         </button>
 
-        <button onClick={() => setActiveScreen("chat")}>
+        <button 
+          onClick={() => setActiveScreen("chat")} 
+          style={{...styles.navBtn, fontWeight: activeScreen === "chat" ? "bold" : "normal"}}
+        >
           💬 মেসেজ
         </button>
 
-        <button onClick={() => setActiveScreen("profile")}>
+        <button 
+          onClick={() => setActiveScreen("profile")} 
+          style={{...styles.navBtn, fontWeight: activeScreen === "profile" ? "bold" : "normal"}}
+        >
           👤 প্রোফাইল
         </button>
 
-        <button onClick={() => authService.logout()}>
+        <button onClick={() => authService.logout()} style={styles.logoutBtn}>
           🚪 লগআউট
         </button>
       </header>
 
-      {activeScreen === "home" && (
-        <HomeScreen
-          user={user}
-          userData={userData}
-        />
-      )}
+      {/* স্ক্রিনগুলো লোড করা এবং নেভিগেশন কন্ট্রোল পাঠানো */}
+      <main className="main-content" style={styles.mainContent}>
+        {activeScreen === "home" && (
+          <HomeScreen
+            user={user}
+            userData={userData}
+            setActiveScreen={setActiveScreen} // হোম স্ক্রিন থেকে অন্য স্ক্রিনে যাওয়ার জন্য
+          />
+        )}
 
-      {activeScreen === "chat" && (
-        <ChatScreen
-          user={user}
-          userData={userData}
-        />
-      )}
+        {activeScreen === "chat" && (
+          <ChatScreen
+            user={user}
+            userData={userData}
+            setActiveScreen={setActiveScreen}
+          />
+        )}
 
-      {activeScreen === "profile" && (
-        <ProfileScreen
-          user={user}
-          userData={userData}
-        />
-      )}
+        {activeScreen === "profile" && (
+          <ProfileScreen
+            user={user}
+            userData={userData}
+            setActiveScreen={setActiveScreen}
+          />
+        )}
+      </main>
     </div>
   );
 }
+
+// সাধারণ মোবাইল ফ্রেন্ডলি ইনলাইন স্টাইল (আপনার অ্যাপের UI সুন্দর রাখার জন্য)
+const styles = {
+  topNav: { display: "flex", justifyContent: "space-around", padding: "12px", backgroundColor: "#fff", borderBottom: "1px solid #ddd", position: "sticky", top: 0, zIndex: 100 },
+  navBtn: { border: "none", backgroundColor: "transparent", fontSize: "16px", cursor: "pointer" },
+  logoutBtn: { border: "none", backgroundColor: "transparent", fontSize: "16px", color: "#ff4d4d", cursor: "pointer" },
+  mainContent: { padding: "15px", minHeight: "calc(100vh - 60px)" }
+};
