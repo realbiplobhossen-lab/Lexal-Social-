@@ -1,36 +1,54 @@
-import React, { useState } from 'react';
-import { db } from '../config/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { followService } from '../services/followService';
+import React, { useState } from "react";
+import { collection, query, where, getDocs, limit } from "firebase/firestore";
+import { db } from "./firebase";
 
-function SearchScreen({ user, userData }) {
-  const [queryText, setQueryText] = useState('');
-  const [results, setResults] = useState([]);
+export default function SearchScreen() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!queryText.trim()) return;
-    const q = query(collection(db, "users"), where("fullName", "==", queryText));
-    const snap = await getDocs(q);
-    setResults(snap.docs.map(d => d.data()).filter(u => u.uid !== user.uid));
+  const search = async (text) => {
+    const searchText = text.trim();
+    if (!searchText) {
+      setUsers([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const q = query(
+        collection(db, "users"),
+        where("name", ">=", searchText),
+        where("name", "<=", searchText + "\uf8ff"),
+        limit(10)
+      );
+
+      const snapshot = await getDocs(q);
+      setUsers(snapshot.docs.map(d => d.data()));
+    } catch (err) {
+      console.error("Search error: ", err);
+    } fileStatus: {
+      setLoading(false);
+    }
   };
 
   return (
-    <div>
-      <form onSubmit={handleSearch} className="search-form">
-        <input type="text" value={queryText} onChange={e=>setQueryText(e.target.value)} placeholder="বন্ধুদের সঠিক নাম লিখে খুঁজুন..." />
-        <button type="submit">খুঁজুন</button>
-      </form>
-      <div className="search-results" style={{ marginTop: '20px' }}>
-        {results.map(u => (
-          <div key={u.uid} className="search-row" style={{ display:'flex', justifyContent:'space-between', padding:'10px', background:'#111827', marginBottom:'8px', borderRadius:'8px' }}>
-            <span>{u.fullName}</span>
-            <button onClick={() => followService.sendRequest(user.uid, userData.fullName, u.uid)} style={{ background:'#2563EB', color:'#fff', border:'none', padding:'4px 10px', borderRadius:'4px' }}>+ ফ্রেন্ড করুন</button>
+    <div style={{ padding: "20px" }}>
+      <h2>Search Users</h2>
+      <input
+        placeholder="Search User by name..."
+        onChange={(e) => search(e.target.value)}
+        style={{ padding: "12px", width: "100%", marginBottom: "15px", background: "#161B22", color: "#fff", border: "1px solid #30363D", borderRadius: "6px" }}
+      />
+      {loading && <p>Searching...</p>}
+      <div className="search-results">
+        {users.map(user => (
+          <div key={user.uid} style={{ padding: "10px", borderBottom: "1px solid #30363D", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>{user.name}</span>
+            <span style={{ fontSize: "12px", color: "#8b949e" }}>{user.email}</span>
           </div>
         ))}
+        {users.length === 0 && !loading && <p style={{ color: "#8b949e" }}>No users found.</p>}
       </div>
     </div>
   );
 }
-export default SearchScreen;
-          
