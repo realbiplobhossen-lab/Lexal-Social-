@@ -1,13 +1,18 @@
-import { db } from '../config/firebase';
-import { doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "./firebase";
 
-export const presenceService = {
-  setOnline: async (userId) => {
-    await setDoc(doc(db, "presence", userId), { status: "online", lastChanged: Date.now() }, { merge: true });
-  },
-  listenStatus: (userId, callback) => {
-    return onSnapshot(doc(db, "presence", userId), (snap) => {
-      callback(snap.exists() ? snap.data().status : "offline");
-    });
-  }
-};
+export async function setUserOnline(uid) {
+  if (!uid) return;
+  await setDoc(doc(db, "presence", uid), {
+    online: true,
+    lastSeen: serverTimestamp()
+  }, { merge: true });
+}
+
+export async function setUserOffline(uid) {
+  if (!uid) return;
+  await setDoc(doc(db, "presence", uid), {
+    online: false,
+    lastSeen: serverTimestamp()
+  }, { merge: true });
+}
