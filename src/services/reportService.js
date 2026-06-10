@@ -1,15 +1,11 @@
-import { db } from '../config/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "./firebase";
 
-export const reportService = {
-  reportContent: async (reporterId, contentType, contentId, reason) => {
-    await addDoc(collection(db, "reports"), {
-      reporterId,
-      contentType, // 'post', 'comment', 'user'
-      contentId,
-      reason,
-      createdAt: Date.now()
-    });
-    alert("রিপোর্ট জমা নেওয়া হয়েছে। মডারেশন টিম এটি খতিয়ে দেখবে।");
-  }
-};
+export async function reportUser(reporter, target, reason) {
+  await addDoc(collection(db, "reports"), {
+    reporter,
+    target,
+    reason,
+    status: "pending",\n    createdAt: serverTimestamp()
+  });
+}
