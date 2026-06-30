@@ -19,13 +19,11 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [screen, setScreen] = useState('home'); 
   const [activeChatId, setActiveChatId] = useState(null); 
-  const [activeCall, setActiveCall] = useState(null); // অডিও-ভিডিও কলের স্টেট
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // ইউজারের ফ্রেন্ড রিকোয়েস্ট ও ডাটা রিয়েল-টাইম ট্র্যাক করা
         onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
           if (docSnap.exists()) setUserData(docSnap.data());
         });
@@ -91,3 +89,4 @@ export default function App() {
 const styles = {
   topBtn: { background: '#21262D', color: '#E6EDF3', border: '1px solid #30363D', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer' }
 };
+
