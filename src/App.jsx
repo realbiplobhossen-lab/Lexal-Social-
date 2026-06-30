@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db } from '../firebase.js'; // রুট ফোল্ডারে থাকা ফায়ারবেস ফাইলটির সঠিক পাথ সেট করা হলো
+import { auth, db } from '../firebase.js'; // রুট ফোল্ডারের ফায়ারবেস ফাইল
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 
-// স্ক্রিন এবং কম্পোনেন্ট ইম্পোর্ট পাথ (.jsx বা .txt ছাড়া)
-import HomeScreen from './HomeScreen';
-import CreatePostScreen from './CreatePostScreen';
-import ProfileScreen from './ProfileScreen';
-import SearchScreen from './SearchScreen';
-import ChatScreen from './ChatScreen';
-import LoginScreen from './LoginScreen';
-import RegisterScreen from './RegisterScreen';
-import BottomNav from './BottomNav';
-import Navbar from './Navbar';
+// স্ক্রিন এবং কম্পোনেন্টগুলোর পাথ রুট ফোল্ডারের (.txt বা .jsx.txt ফাইলের) সাথে মিল রেখে ফিক্স করা হলো
+import HomeScreen from '../HomeScreen.jsx.txt';
+import CreatePostScreen from '../CreatePostScreen.jsx.txt';
+import ProfileScreen from '../ProfileScreen.jsx.txt';
+import SearchScreen from '../SearchScreen.jsx.txt';
+import ChatScreen from '../ChatScreen.jsx.txt';
+import LoginScreen from '../LoginScreen.jsx.txt';
+import RegisterScreen from '../RegisterScreen.jsx.txt';
+import BottomNav from '../BottomNav.jsx.txt';
+import Navbar from '../Navbar.jsx.txt';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -90,4 +90,4 @@ export default function App() {
 const styles = {
   topBtn: { background: '#21262D', color: '#E6EDF3', border: '1px solid #30363D', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer' }
 };
-                            
+    
