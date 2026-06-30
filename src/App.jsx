@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db } from '../firebase'; // এক ধাপ বাইরে রুট ফোল্ডারের ফায়ারবেস ফাইল
+import { auth, db } from './firebase'; // src ফোল্ডারের ভেতর firebase ফাইল (যদি এখানে থাকে)
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 
-// রুট ফোল্ডারে (Root) থাকা আপনার ফাইলগুলোর সঠিক পাথ (এক্সটেনশন ছাড়া)
-import HomeScreen from '../HomeScreen';
-import CreatePostScreen from '../CreatePostScreen';
-import ProfileScreen from '../ProfileScreen';
-import SearchScreen from '../SearchScreen';
-import ChatScreen from '../ChatScreen';
-import LoginScreen from '../LoginScreen';
-import RegisterScreen from '../RegisterScreen';
-import BottomNav from '../BottomNav';
-import Navbar from '../Navbar';
+// আপনার নতুন পাথ (src/screen/) অনুযায়ী সব কম্পোনেন্ট ইম্পোর্ট করা হলো
+import HomeScreen from './screen/HomeScreen';
+import CreatePostScreen from './screen/CreatePostScreen';
+import ProfileScreen from './screen/ProfileScreen';
+import SearchScreen from './screen/SearchScreen';
+import ChatScreen from './screen/ChatScreen';
+import LoginScreen from './screen/LoginScreen';
+import RegisterScreen from './screen/RegisterScreen';
+import BottomNav from './screen/BottomNav';
+import Navbar from './screen/Navbar';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -90,4 +90,3 @@ export default function App() {
 const styles = {
   topBtn: { background: '#21262D', color: '#E6EDF3', border: '1px solid #30363D', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer' }
 };
-                 
