@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db } from './firebase'; 
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth, db } from '../firebase.js'; // রুট ফোল্ডারে থাকা ফায়ারবেস ফাইলটির সঠিক পাথ সেট করা হলো
+import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 
-// স্ক্রিন এবং কম্পোনেন্ট ইম্পোর্ট পাথ ফিক্স করা হয়েছে
+// স্ক্রিন এবং কম্পোনেন্ট ইম্পোর্ট পাথ (.jsx বা .txt ছাড়া)
 import HomeScreen from './HomeScreen';
 import CreatePostScreen from './CreatePostScreen';
 import ProfileScreen from './ProfileScreen';
@@ -25,7 +25,6 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // ফায়ারবেস থেকে রিয়েলটাইম ইউজার ডাটা সিঙ্ক
         onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
           if (docSnap.exists()) setUserData(docSnap.data());
         });
@@ -91,4 +90,4 @@ export default function App() {
 const styles = {
   topBtn: { background: '#21262D', color: '#E6EDF3', border: '1px solid #30363D', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer' }
 };
-                              
+                            
