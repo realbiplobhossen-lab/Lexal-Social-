@@ -4,7 +4,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 
 // রুট বা মেইন পেজে থাকা আপনার আসল .jsx ফাইলগুলোর সঠিক পাথ
-import HomeScreen from '../HomeScreen.jsx';
+import HomeScreen from './HomeScreen.jsx';
 import CreatePostScreen from '../CreatePostScreen.jsx';
 import ProfileScreen from './ProfileScreen.jsx';
 import SearchScreen from '../SearchScreen.jsx';
