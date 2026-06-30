@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db } from '../firebase.js'; // এক ধাপ বাইরে রুট ফোল্ডারের ফায়ারবেস ফাইল
+import { auth, db } from '../firebase'; // এক ধাপ বাইরে রুট ফোল্ডারের ফায়ারবেস ফাইল
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 
-// রুট বা মেইন পেজে থাকা আপনার আসল .jsx ফাইলগুলোর সঠিক পাথ
-import HomeScreen from '../HomeScreen.jsx';
-import CreatePostScreen from '../CreatePostScreen.jsx';
-import ProfileScreen from '../ProfileScreen.jsx';
-import SearchScreen from '../SearchScreen.jsx';
-import ChatScreen from '../ChatScreen.jsx';
-import LoginScreen from '../LoginScreen.jsx';
-import RegisterScreen from '../RegisterScreen.jsx';
-import BottomNav from '../BottomNav.jsx';
-import Navbar from '../Navbar.jsx';
+// রুট ফোল্ডারে (Root) থাকা আপনার ফাইলগুলোর সঠিক পাথ (এক্সটেনশন ছাড়া)
+import HomeScreen from '../HomeScreen';
+import CreatePostScreen from '../CreatePostScreen';
+import ProfileScreen from '../ProfileScreen';
+import SearchScreen from '../SearchScreen';
+import ChatScreen from '../ChatScreen';
+import LoginScreen from '../LoginScreen';
+import RegisterScreen from '../RegisterScreen';
+import BottomNav from '../BottomNav';
+import Navbar from '../Navbar';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -90,4 +90,4 @@ export default function App() {
 const styles = {
   topBtn: { background: '#21262D', color: '#E6EDF3', border: '1px solid #30363D', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer' }
 };
-    
+                              
