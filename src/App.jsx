@@ -3,16 +3,16 @@ import { auth, db } from './config/firebase'; // src/config/firebase.js
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 
-// আপনার ফাইলের আসল নাম অনুযায়ী মাঝখানে স্পেস (Space) দিয়ে পাথ ফিক্স করা হলো
-import HomeScreen from './screen/Home screen'; 
-import CreatePostScreen from './screen/CreatePostScreen';
-import ProfileScreen from './screen/ProfileScreen';
-import SearchScreen from './screen/SearchScreen';
-import ChatScreen from './screen/ChatScreen';
-import LoginScreen from './screen/LoginScreen';
-import RegisterScreen from './screen/RegisterScreen';
-import BottomNav from './screen/BottomNav';
-import Navbar from './screen/Navbar';
+// ফোল্ডারের নাম 'screen' থেকে পরিবর্তন করে সঠিক 'screens' করা হলো
+import HomeScreen from './screens/HomeScreen';
+import CreatePostScreen from './screens/CreatePostScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import SearchScreen from './screens/SearchScreen';
+import ChatScreen from './screens/ChatScreen';
+import LoginScreen from './screens/LoginScreen';
+import RegisterScreen from './screens/RegisterScreen';
+import BottomNav from './screens/BottomNav';
+import Navbar from './screens/Navbar';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -90,4 +90,4 @@ export default function App() {
 const styles = {
   topBtn: { background: '#21262D', color: '#E6EDF3', border: '1px solid #30363D', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer' }
 };
-      
+        
