@@ -3,6 +3,7 @@ import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 
+// স্ক্রিন এবং কম্পোনেন্ট ইম্পোর্ট পাথ ফিক্স করা হয়েছে
 import HomeScreen from './HomeScreen';
 import CreatePostScreen from './CreatePostScreen';
 import ProfileScreen from './ProfileScreen';
@@ -18,12 +19,13 @@ export default function App() {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [screen, setScreen] = useState('home'); 
-  const [activeChatId, setActiveChatId] = useState(null); 
+  const [activeChatId, setActiveChatId] = useState('global_chat'); 
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
+        // ফায়ারবেস থেকে রিয়েলটাইম ইউজার ডাটা সিঙ্ক
         onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
           if (docSnap.exists()) setUserData(docSnap.data());
         });
@@ -47,9 +49,9 @@ export default function App() {
     return (
       <div style={{ background: '#090D13', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         {screen === 'register' ? (
-          <RegisterScreen setPage={setScreen} />
+          <RegisterScreen setAuthView={(view) => setScreen(view === 'login' ? 'login' : 'register')} />
         ) : (
-          <LoginScreen setPage={setScreen} />
+          <LoginScreen setAuthView={(view) => setScreen(view === 'signup' ? 'register' : 'login')} />
         )}
       </div>
     );
@@ -57,12 +59,12 @@ export default function App() {
 
   const renderScreen = () => {
     switch (screen) {
-      case 'home': return <HomeScreen />;
+      case 'home': return <HomeScreen currentUser={user} />;
       case 'create': return <CreatePostScreen setPage={setScreen} />;
       case 'profile': return <ProfileScreen userData={userData} />;
       case 'search': return <SearchScreen currentUser={user} userData={userData} />;
-      case 'messages': return <ChatScreen chatId={activeChatId} setActiveChatId={setActiveChatId} currentUser={user} />;
-      default: return <HomeScreen />;
+      case 'messages': return <ChatScreen chatId={activeChatId} currentUser={user} />;
+      default: return <HomeScreen currentUser={user} />;
     }
   };
 
@@ -73,7 +75,7 @@ export default function App() {
       {/* টপ শর্টকাট বার */}
       <div style={{ display: 'flex', justifyContent: 'space-around', background: '#161B22', padding: '10px', borderBottom: '1px solid #30363D' }}>
         <button style={styles.topBtn} onClick={() => setScreen('home')}>🏠 ফিড</button>
-        <button style={styles.topBtn} onClick={() => setScreen('search')}>🔍 ফ্রেন্ড খুঁজুন ({userData?.friendRequests?.length || 0})</button>
+        <button style={styles.topBtn} onClick={() => setScreen('search')}>🔍 ফ্রেন্ডস</button>
         <button style={styles.topBtn} onClick={() => setScreen('messages')}>💬 মেসেজ</button>
       </div>
 
@@ -89,4 +91,4 @@ export default function App() {
 const styles = {
   topBtn: { background: '#21262D', color: '#E6EDF3', border: '1px solid #30363D', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer' }
 };
-
+                              
