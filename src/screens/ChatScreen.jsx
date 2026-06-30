@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { collection, query, where, onSnapshot, getDocs, orderBy } from "firebase/firestore";
-import { db } from "./firebase";
+import { auth, db } from '../config/firebase';
 import { sendMessage, getMessagesQuery } from "./services/chatService";
 
 export default function ChatScreen({ chatId, setActiveChatId, currentUser }) {
