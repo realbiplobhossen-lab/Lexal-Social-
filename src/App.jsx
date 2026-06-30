@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db } from './config/firebase'; // আপনার সঠিক পাথ: src/config/firebase.js
+import { auth, db } from './config/firebase'; // src/config/firebase.js
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 
-// আপনার আগের তথ্যানুযায়ী স্ক্রিনগুলোর সঠিক পাথ (src/screen/)
-import HomeScreen from './screen/HomeScreen';
+// আপনার ফাইলের আসল নাম অনুযায়ী মাঝখানে স্পেস (Space) দিয়ে পাথ ফিক্স করা হলো
+import HomeScreen from './screen/Home screen'; 
 import CreatePostScreen from './screen/CreatePostScreen';
 import ProfileScreen from './screen/ProfileScreen';
 import SearchScreen from './screen/SearchScreen';
@@ -90,3 +90,4 @@ export default function App() {
 const styles = {
   topBtn: { background: '#21262D', color: '#E6EDF3', border: '1px solid #30363D', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer' }
 };
+      
