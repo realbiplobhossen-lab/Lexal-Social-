@@ -3,7 +3,7 @@ import { auth, db } from './config/firebase'; // src/config/firebase.js
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 
-// ফোল্ডারের নাম 'screen' থেকে পরিবর্তন করে সঠিক 'screens' করা হলো
+// screens ফোল্ডারের স্ক্রিনগুলো
 import HomeScreen from './screens/HomeScreen';
 import CreatePostScreen from './screens/CreatePostScreen';
 import ProfileScreen from './screens/ProfileScreen';
@@ -11,8 +11,10 @@ import SearchScreen from './screens/SearchScreen';
 import ChatScreen from './screens/ChatScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
-import BottomNav from './screens/BottomNav';
-import Navbar from './screens/Navbar';
+
+// components ফোল্ডারের নেভিগেশনাল ফাইলগুলো (পাথ ফিক্স করা হয়েছে)
+import BottomNav from './components/BottomNav';
+import Navbar from './components/Navbar';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -90,4 +92,4 @@ export default function App() {
 const styles = {
   topBtn: { background: '#21262D', color: '#E6EDF3', border: '1px solid #30363D', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer' }
 };
-        
+
