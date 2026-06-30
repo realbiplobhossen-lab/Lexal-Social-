@@ -1,5 +1,6 @@
 import React from "react";
-import Feed from "./Feed"; // পাথ সংশোধন করে সরাসরি একই ফোল্ডারে দেওয়া হলো
+// পাথ সংশোধন করে components ফোল্ডারের সাথে লিংক করা হলো
+import Feed from "../components/Feed"; 
 
 export default function HomeScreen() {
   return (
@@ -9,4 +10,3 @@ export default function HomeScreen() {
     </div>
   );
 }
-
