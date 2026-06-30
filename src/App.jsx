@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db } from './firebase'; // src ফোল্ডারের ভেতর firebase ফাইল (যদি এখানে থাকে)
+import { auth, db } from './config/firebase'; // আপনার সঠিক পাথ: src/config/firebase.js
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 
-// আপনার নতুন পাথ (src/screen/) অনুযায়ী সব কম্পোনেন্ট ইম্পোর্ট করা হলো
+// আপনার আগের তথ্যানুযায়ী স্ক্রিনগুলোর সঠিক পাথ (src/screen/)
 import HomeScreen from './screen/HomeScreen';
 import CreatePostScreen from './screen/CreatePostScreen';
 import ProfileScreen from './screen/ProfileScreen';
