@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { auth } from "./firebase";
-import { uploadImage } from "./uploadService";
-import { createPost } from "./postService";
+// ইম্পোর্ট পাথগুলো ফোল্ডার স্ট্রাকচার অনুযায়ী ফিক্স করা হলো
+import { auth } from "../config/firebase";
+import { uploadImage } from "../services/uploadService";
+import { createPost } from "../services/postService";
 
 export default function CreatePostScreen({ setPage }) {
   const [text, setText] = useState("");
@@ -37,7 +38,8 @@ export default function CreatePostScreen({ setPage }) {
 
   return (
     <div className="page" style={{ padding: "20px" }}>
-      <h2>Create Post</h2>\n      <textarea
+      <h2>Create Post</h2>
+      <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="What's on your mind?"
