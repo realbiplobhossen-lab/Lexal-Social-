@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db } from '../firebase.js'; // রুট ফোল্ডারের ফায়ারবেস ফাইল
+import { auth, db } from '../firebase.js'; // এক ধাপ বাইরে রুট ফোল্ডারের ফায়ারবেস ফাইল
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 
-// স্ক্রিন এবং কম্পোনেন্টগুলোর পাথ রুট ফোল্ডারের (.txt বা .jsx.txt ফাইলের) সাথে মিল রেখে ফিক্স করা হলো
-import HomeScreen from '../HomeScreen.jsx.txt';
-import CreatePostScreen from '../CreatePostScreen.jsx.txt';
-import ProfileScreen from '../ProfileScreen.jsx.txt';
-import SearchScreen from '../SearchScreen.jsx.txt';
-import ChatScreen from '../ChatScreen.jsx.txt';
-import LoginScreen from '../LoginScreen.jsx.txt';
-import RegisterScreen from '../RegisterScreen.jsx.txt';
-import BottomNav from '../BottomNav.jsx.txt';
-import Navbar from '../Navbar.jsx.txt';
+// রুট বা মেইন পেজে থাকা আপনার আসল .jsx ফাইলগুলোর সঠিক পাথ
+import HomeScreen from '../HomeScreen.jsx';
+import CreatePostScreen from '../CreatePostScreen.jsx';
+import ProfileScreen from '../ProfileScreen.jsx';
+import SearchScreen from '../SearchScreen.jsx';
+import ChatScreen from '../ChatScreen.jsx';
+import LoginScreen from '../LoginScreen.jsx';
+import RegisterScreen from '../RegisterScreen.jsx';
+import BottomNav from '../BottomNav.jsx';
+import Navbar from '../Navbar.jsx';
 
 export default function App() {
   const [user, setUser] = useState(null);
