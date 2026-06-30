@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { collection, query, where, getDocs, doc, onSnapshot } from "firebase/firestore";
-import { db } from "./firebase";
+import { auth, db } from '../config/firebase';
 import { friendService } from "./services/friendService";
 
 export default function SearchScreen({ currentUser, userData }) {
