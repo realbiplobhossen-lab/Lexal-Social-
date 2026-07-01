@@ -12,7 +12,7 @@ function LoginScreen({ setAuthView }) {
     try { 
       await authService.login(email, pass); 
     } catch { 
-      alert("ইমেইল বা পাসওয়ার্ড ভুল হয়েছে! আবার চেষ্টা করুন।"); 
+      alert("You entered a wrong email or Password! Please try again with right one!"); 
     } finally {
       setLoading(false);
     }
@@ -127,7 +127,7 @@ function LoginScreen({ setAuthView }) {
               boxShadow: '0 4px 12px rgba(35, 134, 54, 0.2)'
             }}
           >
-            {loading ? 'প্রবেশ করা হচ্ছে...' : 'ENTER'}
+            {loading ? 'Entering in to the account and of Lexal Social World...' : 'ENTER'}
           </button>
         </form>
 
