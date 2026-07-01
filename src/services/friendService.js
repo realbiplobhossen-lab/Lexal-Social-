@@ -1,5 +1,5 @@
 import { doc, setDoc, updateDoc, arrayUnion, arrayRemove, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { db, auth } from '../config/firebase';
 
 export const friendService = {
   // ফ্রেন্ড রিকোয়েস্ট পাঠানো
