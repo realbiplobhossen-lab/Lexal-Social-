@@ -1,5 +1,5 @@
 import { collection, addDoc, query, where, orderBy, serverTimestamp } from "firebase/firestore";
-import { db } from "./firebase"; // পাথ ফিক্স করা হয়েছে সরাসরি রুটের জন্য
+import { db, auth } from '../config/firebase';
 
 export async function sendMessage(chatId, senderId, text) {
   if (!text.trim()) return;
