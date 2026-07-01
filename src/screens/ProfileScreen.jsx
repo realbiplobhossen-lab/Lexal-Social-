@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { auth, db } from '../config/firebase';
 import { doc, updateDoc } from "firebase/firestore";
-import { uploadImage } from "./services/uploadService";
+import { uploadImage } from '../services/uploadService';
 
 export default function ProfileScreen({ userData }) {
   const [bio, setBio] = useState(userData?.bio || "");
