@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { db } from '../config/firebase';
-import { addComment } from "./commentService";
+import { addComment, getComments } from '../services/commentService';
 
 export default function CommentBox({ postId }) {
   const [text, setText] = useState("");
