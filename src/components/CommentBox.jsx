@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { auth } from "./firebase";
+import { db } from '../config/firebase';
 import { addComment } from "./commentService";
 
 export default function CommentBox({ postId }) {
