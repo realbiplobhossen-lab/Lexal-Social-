@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { authService } from '../services/authService';
+import * as authService from '../services/authService';
 
 function LoginScreen({ setAuthView }) {
   const [email, setEmail] = useState('');
