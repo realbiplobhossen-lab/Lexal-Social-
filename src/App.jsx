@@ -10,7 +10,7 @@ import ProfileScreen from './screens/ProfileScreen';
 import SearchScreen from './screens/SearchScreen';
 import ChatScreen from './screens/ChatScreen';
 import LoginScreen from './screens/LoginScreen';
-import RegisterScreen from './screens/RegisterScreen';
+import SignupScreen from './screens/SignupScreen'; // 👈 এখানে নতুন প্রিমিয়াম সাইনআপ স্ক্রিন লিঙ্ক করা হলো
 
 // নেভিগেশনাল কম্পোনেন্টস
 import BottomNav from './components/BottomNav';
@@ -23,14 +23,14 @@ export default function App() {
   const [screen, setScreen] = useState('home'); 
   const [activeChatId, setActiveChatId] = useState('global_chat'); 
 
-  // 🛠️ ফিজিক্যাল মোবাইল ব্যাক বাটন ফিক্স (মহাশূন্যে হারানো রোধ করতে)
+  // 🛠️ ফিজিক্যাল মোবাইল ব্যাক বাটন ফিক্স
   useEffect(() => {
     window.history.pushState({ page: screen }, "");
 
     const handleBackButton = (event) => {
       if (screen !== 'home') {
         event.preventDefault();
-        setScreen('home'); // চ্যাট বা সার্চে আটকে গেলে ব্যাক বাটন চাপলে হোমে নিয়ে আসবে
+        setScreen('home');
       }
     };
 
@@ -38,7 +38,7 @@ export default function App() {
     return () => window.removeEventListener('popstate', handleBackButton);
   }, [screen]);
 
-  // 🔄 ফায়ারবেস অথ লিসেনার (টাইমআউট সেফটিসহ, যাতে অনন্তকাল লোডিং না দেখায়)
+  // 🔄 ফায়ারবেস অথ লিসেনার
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -48,10 +48,10 @@ export default function App() {
           if (docSnap.exists()) {
             setUserData(docSnap.data());
           }
-          setLoading(false); // ডাটা পাওয়া মাত্রই লোডিং শেষ
+          setLoading(false);
         }, (error) => {
           console.error("ইউজার ডাটা সিঙ্ক এরর:", error);
-          setLoading(false); // এরর খেলেও অ্যাপ চালু হবে, আটকে থাকবে না
+          setLoading(false);
         });
 
         return () => unsubscribeUser();
@@ -61,7 +61,6 @@ export default function App() {
       }
     });
 
-    // সেফটি নেট: ফায়ারবেস যদি ৫ সেকেন্ডের মধ্যে রেসপন্স না করে, জোর করে লোডিং বন্ধ করবে
     const timeout = setTimeout(() => setLoading(false), 5000);
 
     return () => {
@@ -80,19 +79,20 @@ export default function App() {
     );
   }
 
+  // 🔐 অথেনটিকেশন স্ক্রিন ভিউ লজিক (লগইন বনাম সাইনআপ পারফেক্ট কানেকশন)
   if (!user) {
     return (
       <div style={{ background: '#090D13', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        {screen === 'register' ? (
-          <RegisterScreen setAuthView={(view) => setScreen(view === 'login' ? 'login' : 'register')} />
+        {screen === 'signup' ? (
+          <SignupScreen setAuthView={(view) => setScreen(view)} />
         ) : (
-          <LoginScreen setAuthView={(view) => setScreen(view === 'signup' ? 'register' : 'login')} />
+          <LoginScreen setAuthView={(view) => setScreen(view)} />
         )}
       </div>
     );
   }
 
-  // স্ক্রিন রেন্ডারিং লজিক (স্টেট প্রপ্স পাসিং ফিক্সড)
+  // স্ক্রিন রেন্ডারিং লজিক
   const renderScreen = () => {
     switch (screen) {
       case 'home': 
@@ -113,7 +113,6 @@ export default function App() {
   return (
     <div style={{ background: '#090D13', color: '#E6EDF3', minHeight: '100vh', paddingBottom: '90px', fontFamily: 'sans-serif' }}>
       
-      {/* আপনার আগের র-স্টাইলের পরিমার্জিত হেডার ও শর্টকাট নেভিগেশন */}
       <Navbar userData={userData} setActiveScreen={setScreen} />
       
       <div style={{ display: 'flex', justifyContent: 'space-around', background: '#161B22', padding: '12px', borderBottom: '1px solid #30363D' }}>
@@ -145,4 +144,4 @@ const styles = {
     transition: 'all 0.2s'
   }
 };
-                   
+                     
