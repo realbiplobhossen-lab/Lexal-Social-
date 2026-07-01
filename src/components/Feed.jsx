@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { collection, query, orderBy, limit, onSnapshot, where } from "firebase/firestore";
-import { db } from "./firebase";
+import { db } from '../config/firebase';
+
 import PostCard from "./PostCard";
 
 export default function Feed() {
