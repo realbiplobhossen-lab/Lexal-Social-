@@ -3,7 +3,7 @@ import { auth, db } from './config/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 
-// ১. আপনার তৈরি করা আসল স্ক্রিনগুলো সব বহাল রাখা হলো
+// আপনার প্রোজেক্টের আসল স্ক্রিনসমূহ
 import HomeScreen from './screens/HomeScreen';
 import CreatePostScreen from './screens/CreatePostScreen';
 import ProfileScreen from './screens/ProfileScreen';
@@ -12,7 +12,7 @@ import ChatScreen from './screens/ChatScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 
-// ২. নেভিগেশনাল কম্পোনেন্টস
+// নেভিগেশনাল কম্পোনেন্টস
 import BottomNav from './components/BottomNav';
 import Navbar from './components/Navbar';
 
@@ -23,15 +23,14 @@ export default function App() {
   const [screen, setScreen] = useState('home'); 
   const [activeChatId, setActiveChatId] = useState('global_chat'); 
 
-  // 🛠️ মোবাইল ব্যাক বাটন ফিক্স লজিক (যা আপনার অ্যাপকে ফ্রিজ হওয়া থেকে বাঁচাবে)
+  // 🛠️ ফিজিক্যাল মোবাইল ব্যাক বাটন ফিক্স (মহাশূন্যে হারানো রোধ করতে)
   useEffect(() => {
-    // যখনই স্ক্রিন চেঞ্জ হবে, ব্রাউজার হিস্ট্রিতে একটা স্টেট পুশ হবে
     window.history.pushState({ page: screen }, "");
 
     const handleBackButton = (event) => {
       if (screen !== 'home') {
         event.preventDefault();
-        setScreen('home'); // হোম স্ক্রিন ছাড়া অন্য কোথাও থাকলে ব্যাক বাটন চাপলে হোমে ফিরবে
+        setScreen('home'); // চ্যাট বা সার্চে আটকে গেলে ব্যাক বাটন চাপলে হোমে নিয়ে আসবে
       }
     };
 
@@ -39,46 +38,51 @@ export default function App() {
     return () => window.removeEventListener('popstate', handleBackButton);
   }, [screen]);
 
-  // 🔄 রিয়েল-টাইম ফায়ারবেস অথ ও ইউজার ডাটা লিসেনার
+  // 🔄 ফায়ারবেস অথ লিসেনার (টাইমআউট সেফটিসহ, যাতে অনন্তকাল লোডিং না দেখায়)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // onSnapshot ব্যবহারের ফলে ডাটাবেজে প্রোফাইল পিক বা বায়ো চেঞ্জ হলে অ্যাপ অটো আপডেট হবে
         const userRef = doc(db, "users", currentUser.uid);
         const unsubscribeUser = onSnapshot(userRef, (docSnap) => {
           if (docSnap.exists()) {
             setUserData(docSnap.data());
           }
+          setLoading(false); // ডাটা পাওয়া মাত্রই লোডিং শেষ
         }, (error) => {
-          console.error("ইউজার ডাটা সিঙ্ক করতে সমস্যা:", error);
+          console.error("ইউজার ডাটা সিঙ্ক এরর:", error);
+          setLoading(false); // এরর খেলেও অ্যাপ চালু হবে, আটকে থাকবে না
         });
 
         return () => unsubscribeUser();
       } else {
         setUserData(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
-    return () => unsubscribe();
+
+    // সেফটি নেট: ফায়ারবেস যদি ৫ সেকেন্ডের মধ্যে রেসপন্স না করে, জোর করে লোডিং বন্ধ করবে
+    const timeout = setTimeout(() => setLoading(false), 5000);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
-  // লোডিং স্ক্রিন
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#090D13', color: '#58A6FF' }}>
-        <div style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>Lexal Social</h2>
-          <p style={{ color: '#8b949e' }}>লোড হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...</p>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#090D13', color: '#58A6FF', flexDirection: 'column', gap: '10px' }}>
+        <h2 style={{ fontSize: '22px', fontFamily: 'sans-serif' }}>Lexal Social</h2>
+        <div style={{ width: '40px', height: '40px', border: '4px solid #161B22', borderTop: '4px solid #58A6FF', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        <p style={{ color: '#8b949e', fontSize: '14px' }}>রিল্যাক্স! অ্যাপটি রানিং করা হচ্ছে...</p>
       </div>
     );
   }
 
-  // ইউজার লগইন না থাকলে সাইন-ইন বা রেজিস্টার স্ক্রিন রেন্ডার হবে
   if (!user) {
     return (
-      <div style={{ background: '#090D13', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+      <div style={{ background: '#090D13', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         {screen === 'register' ? (
           <RegisterScreen setAuthView={(view) => setScreen(view === 'login' ? 'login' : 'register')} />
         ) : (
@@ -88,18 +92,16 @@ export default function App() {
     );
   }
 
-  // ৩. ডাইনামিক স্ক্রিন রেন্ডারিং সিস্টেম (আপনার আগের স্টেট নেমগুলোর সাথে সিঙ্ক করা)
+  // স্ক্রিন রেন্ডারিং লজিক (স্টেট প্রপ্স পাসিং ফিক্সড)
   const renderScreen = () => {
     switch (screen) {
       case 'home': 
         return <HomeScreen currentUser={user} userData={userData} />;
       case 'create': 
-      case 'studio': // আপনার নতুন CreatePostScreen এর সাপেক্ষে ব্যাকআপ কেস
-        return <CreatePostScreen setPage={setScreen} userData={userData} />;
+        return <CreatePostScreen setPage={setScreen} currentUser={user} userData={userData} />;
       case 'profile': 
         return <ProfileScreen userData={userData} currentUser={user} setPage={setScreen} />;
       case 'search': 
-      case 'friends':
         return <SearchScreen currentUser={user} userData={userData} setPage={setScreen} />;
       case 'messages': 
         return <ChatScreen chatId={activeChatId} currentUser={user} userData={userData} setPage={setScreen} />;
@@ -111,22 +113,21 @@ export default function App() {
   return (
     <div style={{ background: '#090D13', color: '#E6EDF3', minHeight: '100vh', paddingBottom: '90px', fontFamily: 'sans-serif' }}>
       
-      {/* প্রফেশনাল টপ নেভিগেশন বার */}
-      <Navbar userData={userData} setActiveScreen={setScreen} currentScreen={screen} />
+      {/* আপনার আগের র-স্টাইলের পরিমার্জিত হেডার ও শর্টকাট নেভিগেশন */}
+      <Navbar userData={userData} setActiveScreen={setScreen} />
       
-      {/* ফেসবুক স্টাইল টপ শর্টকাট ট্যাব বার (ডিজাইন আরও উন্নত করা হলো) */}
-      <div style={{ display: 'flex', justifyContent: 'space-around', background: '#161B22', padding: '12px', borderBottom: '1px solid #30363D', sticky: 'top', zIndex: 40 }}>
-        <button style={{ ...styles.topBtn, borderBottom: screen === 'home' ? '2px solid #58A6FF' : '1px solid #30363D' }} onClick={() => setScreen('home')}>🏠 ফিড</button>
-        <button style={{ ...styles.topBtn, borderBottom: (screen === 'search' || screen === 'friends') ? '2px solid #58A6FF' : '1px solid #30363D' }} onClick={() => setScreen('search')}>🔍 ফ্রেন্ডস</button>
-        <button style={{ ...styles.topBtn, borderBottom: screen === 'messages' ? '2px solid #58A6FF' : '1px solid #30363D' }} onClick={() => setScreen('messages')}>💬 মেসেজ</button>
+      <div style={{ display: 'flex', justifyContent: 'space-around', background: '#161B22', padding: '12px', borderBottom: '1px solid #30363D' }}>
+        <button style={{ ...styles.topBtn, color: screen === 'home' ? '#58A6FF' : '#E6EDF3', borderBottom: screen === 'home' ? '2px solid #58A6FF' : 'none' }} onClick={() => setScreen('home')}>🏠 ফিড</button>
+        <button style={{ ...styles.topBtn, color: screen === 'search' ? '#58A6FF' : '#E6EDF3', borderBottom: screen === 'search' ? '2px solid #58A6FF' : 'none' }} onClick={() => setScreen('search')}>🔍 ফ্রেন্ডস</button>
+        <button style={{ ...styles.topBtn, color: screen === 'messages' ? '#58A6FF' : '#E6EDF3', borderBottom: screen === 'messages' ? '2px solid #58A6FF' : 'none' }} onClick={() => setScreen('messages')}>💬 মেসেজ</button>
       </div>
 
-      {/* মূল কন্টেন্ট এরিয়া */}
-      <div style={{ maxWidth: '600px', margin: '0 auto', padding: '15px' }}>
+      {/* মেইন ভিউপোর্ট */}
+      <div style={{ padding: '15px', maxWidth: '600px', margin: '0 auto' }}>
         {renderScreen()}
       </div>
 
-      {/* বটম নেভিগেশন বার */}
+      {/* বটম নেভিগেশন */}
       <BottomNav setPage={setScreen} currentPage={screen} />
     </div>
   );
@@ -135,13 +136,13 @@ export default function App() {
 const styles = {
   topBtn: { 
     background: 'transparent', 
-    color: '#E6EDF3', 
-    border: 'none',
-    padding: '8px 20px', 
-    cursor: 'pointer',
-    fontSize: '15px',
-    fontWeight: '600',
-    transition: 'all 0.2s ease'
+    border: 'none', 
+    padding: '8px 16px', 
+    cursor: 'pointer', 
+    fontSize: '15px', 
+    fontWeight: 'bold',
+    borderRadius: '0px',
+    transition: 'all 0.2s'
   }
 };
                    
