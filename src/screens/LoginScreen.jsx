@@ -52,13 +52,14 @@ function LoginScreen({ setAuthView }) {
         </h2>
         
         <p style={{ color: '#8B949E', fontSize: '14px', marginBottom: '24px' }}>
-          স্বাগতম! আপনার অ্যাকাউন্টে লগইন করুন
+          Welcome to The Lexal Social World! 🌎 
+          LOGIN IN YOUR ACCOUNT 
         </p>
 
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* ইমেইল ইনপুট */}
           <div style={{ textAlign: 'left' }}>
-            <label style={{ color: '#C9D1D9', fontSize: '13px', display: 'block', marginBottom: '6px', fontWeight: '500' }}>ইমেইল অ্যাড্রেস</label>
+            <label style={{ color: '#C9D1D9', fontSize: '13px', display: 'block', marginBottom: '6px', fontWeight: '500' }}>Email Address</label>
             <input 
               type="email" 
               placeholder="name@example.com" 
@@ -84,7 +85,7 @@ function LoginScreen({ setAuthView }) {
 
           {/* পাসওয়ার্ড ইনপুট */}
           <div style={{ textAlign: 'left' }}>
-            <label style={{ color: '#C9D1D9', fontSize: '13px', display: 'block', marginBottom: '6px', fontWeight: '500' }}>পাসওয়ার্ড</label>
+            <label style={{ color: '#C9D1D9', fontSize: '13px', display: 'block', marginBottom: '6px', fontWeight: '500' }}>Password</label>
             <input 
               type="password" 
               placeholder="••••••••" 
@@ -126,7 +127,7 @@ function LoginScreen({ setAuthView }) {
               boxShadow: '0 4px 12px rgba(35, 134, 54, 0.2)'
             }}
           >
-            {loading ? 'প্রবেশ করা হচ্ছে...' : 'প্রবেশ করুন'}
+            {loading ? 'প্রবেশ করা হচ্ছে...' : 'ENTER'}
           </button>
         </form>
 
@@ -144,7 +145,8 @@ function LoginScreen({ setAuthView }) {
             onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
             onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
           >
-            নতুন অ্যাকাউন্ট তৈরি করুন
+            Or, New in Lexal Social?
+            CREATE NEW ACCOUNT 
           </span>
         </div>
       </div>
