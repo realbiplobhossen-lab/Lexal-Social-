@@ -2,38 +2,87 @@ import React, { useState } from 'react';
 import { auth } from '../config/firebase';
 import { signOut } from 'firebase/auth';
 
-export default function Navbar({ userData, currentScreen, setScreen }) {
+export default function Navbar({ userData, setActiveScreen }) {
   const [showDropdown, setShowDropdown] = useState(false);
 
+  // লগআউট হ্যান্ডলার
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      alert("লগআউট করতে সমস্যা হয়েছে: " + error.message);
+    }
+  };
+
   return (
-    <nav className="bg-[#1f2937] text-white px-4 py-3 flex justify-between items-center sticky top-0 z-50 shadow-md border-b border-gray-700">
-      <div className="text-2xl font-black tracking-wider text-blue-500 cursor-pointer" onClick={() => setScreen('home')}>
+    <nav style={{
+      background: '#161B22',
+      color: '#white',
+      padding: '12px 16px',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderBottom: '1px solid #30363D',
+      position: 'sticky',
+      top: 0,
+      zIndex: 100,
+      fontFamily: 'sans-serif'
+    }}>
+      {/* লোগো */}
+      <div 
+        style={{ text2xl: '20px', fontWeight: 'bold', color: '#58A6FF', cursor: 'pointer', trackingWider: '1px' }} 
+        onClick={() => setActiveScreen('home')}
+      >
         LexalSpace
       </div>
       
-      {/* মেইন ফেসবুক স্টাইল ট্যাব নেভিগেশন */}
-      <div className="flex space-x-6 md:space-x-12">
-        <button onClick={() => setScreen('home')} className={`text-xl ${currentScreen === 'home' ? 'text-blue-500 border-b-2 border-blue-500 pb-1' : 'text-gray-400'}`}>🏠</button>
-        <button onClick={() => setScreen('chats')} className={`text-xl ${currentScreen === 'chats' ? 'text-blue-500 border-b-2 border-blue-500 pb-1' : 'text-gray-400'}`}>💬</button>
-        <button onClick={() => setScreen('studio')} className={`text-xl ${currentScreen === 'studio' ? 'text-blue-500 border-b-2 border-blue-500 pb-1' : 'text-gray-400'}`}>➕</button>
-        <button onClick={() => setScreen('friends')} className={`text-xl ${currentScreen === 'friends' ? 'text-blue-500 border-b-2 border-blue-500 pb-1' : 'text-gray-400'}`}>👥</button>
-      </div>
+      {/* 👤 প্রোফাইল এবং ড্রপডাউন সেটিংস */}
+      <div style={{ position: 'relative' }}>
+        <div 
+          onClick={() => setShowDropdown(!showDropdown)} 
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#21262D', padding: '6px 12px', borderRadius: '20px', cursor: 'pointer', border: '1px solid #30363D' }}
+        >
+          <img 
+            src={userData?.avatar || "https://via.placeholder.com/150"} 
+            alt="Avatar" 
+            style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #58A6FF' }} 
+          />
+          <span style={{ color: '#E6EDF3', fontSize: '14px', fontWeight: '500' }}>
+            {userData?.name || "ইউজার"}
+          </span>
+        </div>
 
-      {/* প্রোফাইল এবং ড্রপডাউন সেটিংস (যেখানে লগআউট বাটনটি লুকিয়ে থাকবে) */}
-      <div className="relative">
-        <button onClick={() => setShowDropdown(!showDropdown)} className="flex items-center space-x-2 bg-gray-800 p-1.5 rounded-full hover:bg-gray-700 transition">
-          <img src={userData?.avatar || "https://via.placeholder.com/150"} alt="Avatar" className="w-8 h-8 rounded-full border border-blue-500 object-cover" />
-          <span className="hidden md:inline font-medium text-sm">{userData?.username || "ইউজার"}</span>
-        </button>
-
+        {/* ড্রপডাউন বক্স (লগআউট বাটনটি এখানে চমৎকারভাবে কাজ করবে) */}
         {showDropdown && (
-          <div className="absolute right-0 mt-2 w-48 bg-[#111827] border border-gray-700 rounded-lg shadow-xl py-2 text-gray-200">
-            <button onClick={() => { setScreen('profile'); setShowDropdown(false); }} className="w-full text-left px-4 py-2 hover:bg-gray-800 flex items-center gap-2">👤 প্রোফাইল সেটিংস</button>
-            <hr className="border-gray-700 my-1" />
-            <button onClick={() => signOut(auth)} className="w-full text-left px-4 py-2 hover:bg-red-900/40 text-red-400 flex items-center gap-2">Logout (লগআউট)</button>
+          <div style={{
+            position: 'absolute',
+            right: 0,
+            marginTop: '8px',
+            width: '160px',
+            background: '#161B22',
+            border: '1px solid #30363D',
+            borderRadius: '8px',
+            boxShadow: '0px 8px 24px rgba(0,0,0,0.5)',
+            padding: '6px 0',
+            zIndex: 101
+          }}>
+            <button 
+              onClick={() => { setActiveScreen('profile'); setShowDropdown(false); }} 
+              style={{ width: '100%', background: 'transparent', border: 'none', color: '#E6EDF3', textLeft: 'left', padding: '10px 16px', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              👤 প্রোফাইল সেটিংস
+            </button>
+            <hr style={{ border: 'none', borderTop: '1px solid #30363D', margin: '4px 0' }} />
+            <button 
+              onClick={handleLogout} 
+              style={{ width: '100%', background: 'transparent', border: 'none', color: '#FF7B72', textLeft: 'left', padding: '10px 16px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              🚪 লগআউট (Logout)
+            </button>
           </div>
         )}
       </div>
     </nav>
   );
-}
+            }
+
