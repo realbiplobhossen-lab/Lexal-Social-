@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
-import { db } from "./firebase";
+import { db } from '../config/firebase';
 
 export default function PostCounter() {
   const [count, setCount] = useState(0);
