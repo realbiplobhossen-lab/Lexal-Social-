@@ -4,22 +4,153 @@ import * as authService from '../services/authService';
 function LoginScreen({ setAuthView }) {
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
-  
+  const [loading, setLoading] = useState(false);
+
   const handleLogin = async (e) => {
     e.preventDefault();
-    try { await authService.login(email, pass); } catch { alert("ইমেইল বা পাসওয়ার্ড ভুল!"); }
+    setLoading(true);
+    try { 
+      await authService.login(email, pass); 
+    } catch { 
+      alert("ইমেইল বা পাসওয়ার্ড ভুল হয়েছে! আবার চেষ্টা করুন।"); 
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="auth-card">
-      <h2>Lexal Social - লগইন</h2>
-      <form onSubmit={handleLogin}>
-        <input type="email" placeholder="ইমেইল" onChange={e=>setEmail(e.target.value)} required />
-        <input type="password" placeholder="পাসওয়ার্ড" onChange={e=>setPass(e.target.value)} required />
-        <button type="submit">প্রবেশ করুন</button>
-      </form>
-      <span onClick={() => setAuthView('signup')} className="auth-toggle-link">নতুন অ্যাকাউন্ট তৈরি করুন</span>
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: '100vh',
+      background: '#0D1117',
+      padding: '20px',
+      boxSizing: 'border-box',
+      fontFamily: 'sans-serif'
+    }}>
+      <div style={{
+        background: '#161B22',
+        border: '1px solid #30363D',
+        borderRadius: '12px',
+        padding: '30px 24px',
+        width: '100%',
+        maxWidth: '400px',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+        textAlign: 'center'
+      }}>
+        {/* অ্যাপ লোগো/হেডার */}
+        <h2 style={{ 
+          color: '#58A6FF', 
+          fontSize: '28px', 
+          fontWeight: 'bold', 
+          marginBottom: '8px',
+          marginTop: 0,
+          letterSpacing: '1px'
+        }}>
+          LexalSpace
+        </h2>
+        
+        <p style={{ color: '#8B949E', fontSize: '14px', marginBottom: '24px' }}>
+          স্বাগতম! আপনার অ্যাকাউন্টে লগইন করুন
+        </p>
+
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* ইমেইল ইনপুট */}
+          <div style={{ textAlign: 'left' }}>
+            <label style={{ color: '#C9D1D9', fontSize: '13px', display: 'block', marginBottom: '6px', fontWeight: '500' }}>ইমেইল অ্যাড্রেস</label>
+            <input 
+              type="email" 
+              placeholder="name@example.com" 
+              value={email}
+              onChange={e => setEmail(e.target.value)} 
+              required 
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: '#0D1117',
+                border: '1px solid #30363D',
+                borderRadius: '8px',
+                color: '#FFF',
+                fontSize: '14px',
+                boxSizing: 'border-box',
+                outline: 'none',
+                transition: 'border-color 0.2s'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#58A6FF'}
+              onBlur={(e) => e.target.style.borderColor = '#30363D'}
+            />
+          </div>
+
+          {/* পাসওয়ার্ড ইনপুট */}
+          <div style={{ textAlign: 'left' }}>
+            <label style={{ color: '#C9D1D9', fontSize: '13px', display: 'block', marginBottom: '6px', fontWeight: '500' }}>পাসওয়ার্ড</label>
+            <input 
+              type="password" 
+              placeholder="••••••••" 
+              value={pass}
+              onChange={e => setPass(e.target.value)} 
+              required 
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: '#0D1117',
+                border: '1px solid #30363D',
+                borderRadius: '8px',
+                color: '#FFF',
+                fontSize: '14px',
+                boxSizing: 'border-box',
+                outline: 'none',
+                transition: 'border-color 0.2s'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#58A6FF'}
+              onBlur={(e) => e.target.style.borderColor = '#30363D'}
+            />
+          </div>
+
+          {/* লগইন বাটন */}
+          <button 
+            type="submit" 
+            disabled={loading}
+            style={{
+              background: loading ? '#1f6feb' : '#238636',
+              color: '#FFF',
+              border: 'none',
+              padding: '12px',
+              borderRadius: '8px',
+              fontSize: '15px',
+              fontWeight: 'bold',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              marginTop: '10px',
+              transition: 'background 0.2s',
+              boxShadow: '0 4px 12px rgba(35, 134, 54, 0.2)'
+            }}
+          >
+            {loading ? 'প্রবেশ করা হচ্ছে...' : 'প্রবেশ করুন'}
+          </button>
+        </form>
+
+        {/* সাইনআপ লিঙ্ক */}
+        <div style={{ marginTop: '24px', borderTop: '1px solid #30363D', paddingTop: '16px' }}>
+          <span 
+            onClick={() => setAuthView('signup')} 
+            style={{ 
+              color: '#58A6FF', 
+              cursor: 'pointer', 
+              fontSize: '14px',
+              fontWeight: '500',
+              textDecoration: 'none'
+            }}
+            onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+            onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+          >
+            নতুন অ্যাকাউন্ট তৈরি করুন
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
+
 export default LoginScreen;
+                
