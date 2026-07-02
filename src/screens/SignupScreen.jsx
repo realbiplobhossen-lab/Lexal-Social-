@@ -1,49 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import * as authService from '../services/authService';
 
-// নিষিদ্ধ বা অবাস্তব নামের আংশিক তালিকা (স্প্যাম প্রতিরোধের জন্য)
-const BANNED_WORDS = ['admin', 'fakeuser', 'badword1', 'badword2', 'anonymous', 'null', 'undefined'];
+// Banned words to prevent fake/offensive accounts
+const BANNED_WORDS = ['admin', 'fakeuser', 'anonymous', 'null', 'undefined', 'moderator', 'system', 'root'];
 
-// পৃথিবীর প্রধান দেশসমূহের তালিকা (সংক্ষিপ্ত নমুনা - আপনি চাইলে আরও বড় করতে পারেন)
+// Alphabetical List of Countries (Comprehensive Sample)
 const COUNTRIES = [
-  "Bangladesh", "United States", "United Kingdom", "India", "Pakistan", 
-  "Saudi Arabia", "United Arab Emirates", "Canada", "Australia", "Malaysia"
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+  "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Brazil", "Brunei",
+  "Canada", "Chile", "China", "Colombia", "Cuba", "Cyprus", "Denmark", "Egypt", "Finland", "France", "Germany", "India", 
+  "Indonesia", "Iran", "Iraq", "Italy", "Japan", "Malaysia", "Maldives", "Mexico", "Oman", "Pakistan", "Qatar", 
+  "Saudi Arabia", "Singapore", "South Africa", "Spain", "Turkey", "United Arab Emirates", "United Kingdom", "United States"
 ];
 
-// বাংলাদেশের জেলাসমূহের নমুনা ডাটা (Hometown/City সাজেশনের জন্য)
-const BD_PLACES = [
-  "Dhaka, Sadar", "Dhaka, Mirpur", "Dhaka, Uttara", "Dhaka, Gulshan", "Dhaka, Savar", "Dhaka, Dhamrai",
-  "Chittagong, Sadar", "Chittagong, Hathazari", "Comilla, Sadar", "Comilla, Laksam", "Sylhet, Sadar",
-  "Rajshahi, Sadar", "Khulna, Sadar", "Barisal, Sadar", "Rangpur, Sadar", "Mymensingh, Sadar"
+// Mock Global Database for Autocomplete Suggestions based on typing
+const GLOBAL_PLACES = [
+  "Dhaka, Bangladesh", "Chittagong, Bangladesh", "Sylhet, Bangladesh", "Comilla, Bangladesh", "Khulna, Bangladesh",
+  "New York, United States", "Los Angeles, United States", "London, United Kingdom", "Manchester, United Kingdom",
+  "Mumbai, India", "Delhi, India", "Kolkata, India", "Riyadh, Saudi Arabia", "Jeddah, Saudi Arabia", "Dubai, UAE",
+  "Kuala Lumpur, Malaysia", "Singapore City, Singapore", "Tokyo, Japan", "Toronto, Canada", "Sydney, Australia"
 ];
 
 export default function SignupScreen({ setAuthView, onSignupSuccess }) {
-  // ইনপুট স্টেটস
+  // Input States
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [country, setCountry] = useState('Bangladesh');
   const [hometown, setHometown] = useState('');
   const [currentCity, setCurrentCity] = useState('');
   const [gender, setGender] = useState('');
-  const [contactInput, setContactInput] = useState(''); // ইমেইল বা ফোন নম্বর
+  const [contactInput, setContactInput] = useState('');
   const [pass, setPass] = useState('');
   const [rePass, setRePass] = useState('');
 
-  // জন্মতারিখ স্টেটস
+  // DOB States
   const [birthDay, setBirthDay] = useState('');
   const [birthMonth, setBirthMonth] = useState('');
   const [birthYear, setBirthYear] = useState('');
 
-  // সাজেশন ও ভেরিফিকেশন স্টেটস
+  // Validation States
   const [homeSuggestions, setHomeSuggestions] = useState([]);
   const [citySuggestions, setCitySuggestions] = useState([]);
+  const [captchaQuestion, setCaptchaQuestion] = useState({ q: '5 + 7', a: 12 });
   const [isCaptchaChecked, setIsCaptchaChecked] = useState(false);
   const [isRobotVerified, setIsRobotVerified] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // ১. ডাইনামিক প্লেস সাজেশন (Hometown & Current City)
+  // Dynamic Place Suggestions based on typing
   const handlePlaceTyping = (text, type) => {
     if (type === 'home') setHometown(text);
     if (type === 'city') setCurrentCity(text);
@@ -53,99 +58,93 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
       return;
     }
 
-    if (country === 'Bangladesh') {
-      const filtered = BD_PLACES.filter(place => 
-        place.toLowerCase().includes(text.toLowerCase())
-      );
-      type === 'home' ? setHomeSuggestions(filtered) : setCitySuggestions(filtered);
-    } else {
-      // অন্যান্য দেশের জন্য ডাইনামিক মক সাজেশন (বাস্তব ক্ষেত্রে এখানে API কল হবে)
-      const internationalMock = [`${text}, Central Area`, `${text}, Downtown`, `${text}, Sector 1`];
-      type === 'home' ? setHomeSuggestions(internationalMock) : setCitySuggestions(internationalMock);
+    // Filter global places based on user typing text
+    const filtered = GLOBAL_PLACES.filter(place => 
+      place.toLowerCase().includes(text.toLowerCase())
+    );
+    
+    // Fallback dynamic suggestion if exact match not found
+    if (filtered.length === 0) {
+      filtered.push(`${text}, Area Center`);
     }
+
+    type === 'home' ? setHomeSuggestions(filtered) : setCitySuggestions(filtered);
   };
 
-  // ২. ডাই导航 ডাইনামিক ক্যাপচা চ্যালেঞ্জ (Bot Protection)
+  // Generate International Captcha
   const triggerCaptchaChallenge = () => {
     if (isRobotVerified) return;
-    const num1 = Math.floor(Math.random() * 10) + 1;
-    const num2 = Math.floor(Math.random() * 10) + 1;
+    const num1 = Math.floor(Math.random() * 12) + 1;
+    const num2 = Math.floor(Math.random() * 12) + 1;
     const ans = num1 + num2;
     
-    const userAns = prompt(`বট ভেরিফিকেশন: বলুন তো ${num1} + ${num2} কত হয়?`);
+    const userAns = prompt(`Security Check: What is ${num1} + ${num2}?`);
     if (parseInt(userAns) === ans) {
       setIsRobotVerified(true);
       setIsCaptchaChecked(true);
     } else {
-      alert("ভুল উত্তর! আপনি সম্ভবত একজন রোবট।");
+      alert("Verification Failed! Please try again.");
       setIsCaptchaChecked(false);
     }
   };
 
-  // ৩. ফর্ম সাবমিট হ্যান্ডলার
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
 
-    // ক) নাম ভ্যালিডেশন
+    // Name Validation
     const combinedName = `${firstName.trim()} ${lastName.trim()}`;
     const containsBannedWord = BANNED_WORDS.some(word => 
       firstName.toLowerCase().includes(word) || lastName.toLowerCase().includes(word)
     );
 
     if (containsBannedWord || firstName.length < 2 || lastName.length < 2) {
-      alert("অনুগ্রহ করে একটি বাস্তব এবং সঠিক নাম ব্যবহার করুন!");
+      alert("Please enter a valid, real professional name!");
       return;
     }
 
-    // খ) পাসওয়ার্ড ম্যাচিং
+    // Password Checks
     if (pass.length < 8) {
-      alert("পাসওয়ার্ড অবশ্যই কমপক্ষে ৮ অক্ষরের হতে হবে!");
+      alert("Password must be at least 8 characters long!");
       return;
     }
     if (pass !== rePass) {
-      alert("উভয় পাসওয়ার্ড মেলেনি!");
+      alert("Passwords do not match!");
       return;
     }
 
-    // গ) সেফটি চেক
     if (!isRobotVerified) {
-      alert("দয়া করে প্রমাণ করুন যে আপনি রোবট নন!");
+      alert("Please complete the bot verification!");
       return;
     }
     if (!agreeTerms) {
-      alert("আপনাকে অবশ্যই Terms and Conditions মেনে নিতে হবে!");
+      alert("You must agree to the terms and conditions!");
       return;
     }
 
     setLoading(true);
     try {
-      // ডাটাবেজে সেভ করার জন্য অবজেক্ট রেডি করা
       const userProfileData = {
         name: combinedName,
         country,
         hometown,
         currentCity,
         dob: `${birthYear}-${birthMonth}-${birthDay}`,
-        gender,
-        contact: contactInput
+        gender
       };
 
-      // এখানে আপনার authService কল হবে
       await authService.register(contactInput, pass, combinedName, userProfileData);
-      
       alert("Account created successfully!");
-      if (onSignupSuccess) onSignupSuccess(); // সরাসরি হোমে নিয়ে যাওয়ার ট্রিগার
+      if (onSignupSuccess) onSignupSuccess();
     } catch (error) {
-      alert("রেজিস্ট্রেশন ব্যর্থ হয়েছে: " + error.message);
+      alert("Registration failed: " + error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // জেনারেট অপশনস (দিন ও বছর)
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
   const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const years = Array.from({ length: 80 }, (_, i) => new Date().getFullYear() - i);
+  const years = Array.from({ length: 70 }, (_, i) => new Date().getFullYear() - 14 - i); // Min age 14
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#0D1117', padding: '20px', boxSizing: 'border-box', fontFamily: 'sans-serif' }}>
@@ -156,7 +155,7 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
 
         <form onSubmit={handleSignupSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
-          {/* ১. নাম এরিয়া (First & Last Name) */}
+          {/* First & Last Name */}
           <div style={{ display: 'flex', gap: '12px' }}>
             <div style={{ flex: 1, textAlign: 'left' }}>
               <label style={styles.label}>First Name</label>
@@ -168,7 +167,7 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
             </div>
           </div>
 
-          {/* ২. দেশের নাম (Country Selection) */}
+          {/* Country Selection */}
           <div style={{ textAlign: 'left' }}>
             <label style={styles.label}>Country Name</label>
             <select value={country} onChange={e => setCountry(e.target.value)} style={styles.input}>
@@ -176,10 +175,10 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
             </select>
           </div>
 
-          {/* ৩. Hometown ও সাজেশন */}
+          {/* Hometown Auto-suggestion */}
           <div style={{ textAlign: 'left', position: 'relative' }}>
             <label style={styles.label}>Hometown</label>
-            <input type="text" placeholder="Type your hometown..." value={hometown} onChange={e => handlePlaceTyping(e.target.value, 'home')} required style={styles.input} />
+            <input type="text" placeholder="Start typing hometown..." value={hometown} onChange={e => handlePlaceTyping(e.target.value, 'home')} required style={styles.input} />
             {homeSuggestions.length > 0 && (
               <div style={styles.suggestionBox}>
                 {homeSuggestions.map(p => <div key={p} style={styles.suggestionItem} onClick={() => { setHometown(p); setHomeSuggestions([]); }}>{p}</div>)}
@@ -187,10 +186,10 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
             )}
           </div>
 
-          {/* ৪. Current City ও সাজেশন */}
+          {/* Current City Auto-suggestion */}
           <div style={{ textAlign: 'left', position: 'relative' }}>
             <label style={styles.label}>Current City</label>
-            <input type="text" placeholder="Type your current city..." value={currentCity} onChange={e => handlePlaceTyping(e.target.value, 'city')} required style={styles.input} />
+            <input type="text" placeholder="Start typing current city..." value={currentCity} onChange={e => handlePlaceTyping(e.target.value, 'city')} required style={styles.input} />
             {citySuggestions.length > 0 && (
               <div style={styles.suggestionBox}>
                 {citySuggestions.map(p => <div key={p} style={styles.suggestionItem} onClick={() => { setCurrentCity(p); setCitySuggestions([]); }}>{p}</div>)}
@@ -198,7 +197,7 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
             )}
           </div>
 
-          {/* ৫. জন্মতারিখ (Date of Birth Scroll/Dropdown) */}
+          {/* Date of Birth Scroll Pickers */}
           <div style={{ textAlign: 'left' }}>
             <label style={styles.label}>Date of Birth</label>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -217,23 +216,23 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
             </div>
           </div>
 
-          {/* 💻 ৬. জেন্ডার (Gender Selection) */}
+          {/* Gender */}
           <div style={{ textAlign: 'left' }}>
             <label style={styles.label}>Gender</label>
-            <div style={{ display: 'flex', gap: '20px', padding: '10px 0' }}>
-              <label style={{ color: '#FFF', fontSize: '14px', cursor: 'pointer' }}><input type="radio" name="gender" value="Male" onChange={e => setGender(e.target.value)} required style={{marginRight: '6px'}} /> Male</label>
-              <label style={{ color: '#FFF', fontSize: '14px', cursor: 'pointer' }}><input type="radio" name="gender" value="Female" onChange={e => setGender(e.target.value)} required style={{marginRight: '6px'}} /> Female</label>
-              <label style={{ color: '#FFF', fontSize: '14px', cursor: 'pointer' }}><input type="radio" name="gender" value="Other" onChange={e => setGender(e.target.value)} required style={{marginRight: '6px'}} /> Other</label>
+            <div style={{ display: 'flex', gap: '20px', padding: '6px 0' }}>
+              <label style={styles.radioLabel}><input type="radio" name="gender" value="Male" onChange={e => setGender(e.target.value)} required /> Male</label>
+              <label style={styles.radioLabel}><input type="radio" name="gender" value="Female" onChange={e => setGender(e.target.value)} required /> Female</label>
+              <label style={styles.radioLabel}><input type="radio" name="gender" value="Other" onChange={e => setGender(e.target.value)} required /> Other</label>
             </div>
           </div>
 
-          {/* 📞 ৭. মোবাইল অথবা ইমেইল */}
+          {/* Mobile or Email */}
           <div style={{ textAlign: 'left' }}>
             <label style={styles.label}>Mobile Number or Email</label>
             <input type="text" placeholder="Enter valid phone number or email" value={contactInput} onChange={e => setContactInput(e.target.value)} required style={styles.input} />
           </div>
 
-          {/* 🔑 ৮. পাসওয়ার্ড এরিয়া */}
+          {/* Password & Confirm */}
           <div style={{ display: 'flex', gap: '12px' }}>
             <div style={{ flex: 1, textAlign: 'left' }}>
               <label style={styles.label}>Password</label>
@@ -245,23 +244,23 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
             </div>
           </div>
 
-          {/* 🤖 ৯. আই এম নট রোবট (Dynamic Verification) */}
-          <div style={{ display: 'flex', alignItems: 'center', background: '#0D1117', padding: '12px', borderRadius: '8px', border: '1px solid #30363D', marginTop: '5px' }}>
-            <input type="checkbox" checked={isCaptchaChecked} onChange={triggerCaptchaChallenge} style={{ width: '20px', height: '20px', marginRight: '12px', cursor: 'pointer' }} />
+          {/* Professional Captcha Checkbox */}
+          <div style={{ display: 'flex', alignItems: 'center', background: '#0D1117', padding: '12px', borderRadius: '8px', border: '1px solid #30363D', marginTop: '4px' }}>
+            <input type="checkbox" checked={isCaptchaChecked} onChange={triggerCaptchaChallenge} style={{ width: '18px', height: '18px', marginRight: '12px', cursor: 'pointer' }} />
             <span style={{ color: '#C9D1D9', fontSize: '14px' }}>{isRobotVerified ? "✅ Verified Human" : "I am not a robot"}</span>
           </div>
 
-          {/* 📄 ১০. টার্মস অ্যান্ড কন্ডিশনস */}
-          <div style={{ textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '5px' }}>
+          {/* Terms & Conditions Checkbox */}
+          <div style={{ textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
             <input type="checkbox" checked={agreeTerms} onChange={e => setAgreeTerms(e.target.checked)} style={{ marginTop: '3px' }} />
             <span style={{ color: '#C9D1D9', fontSize: '13px', lineHeight: '1.4' }}>
               I agree with the <span onClick={() => setShowTermsModal(true)} style={{ color: '#58A6FF', cursor: 'pointer', textDecoration: 'underline' }}>Terms and Conditions</span>.
             </span>
           </div>
 
-          {/* সাবমিট বাটন */}
-          <button type="submit" disabled={loading} style={{ background: loading ? '#1f6feb' : '#238636', color: '#FFF', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', marginTop: '10px' }}>
-            {loading ? 'Processing Registration...' : 'NOW CREATE NEW ACCOUNT'}
+          {/* Submit Button */}
+          <button type="submit" disabled={loading} style={{ background: loading ? '#1f6feb' : '#238636', color: '#FFF', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '15px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', marginTop: '8px' }}>
+            {loading ? 'PROCESSING REGISTRATION...' : 'NOW CREATE NEW ACCOUNT'}
           </button>
         </form>
 
@@ -270,17 +269,18 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
         </div>
       </div>
 
-      {/* 📄 টার্মস অ্যান্ড কন্ডিশনস পপআপ মডাল */}
+      {/* Premium Extended Terms & Conditions Modal */}
       {showTermsModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
-            <h3 style={{ color: '#58A6FF', marginTop: 0 }}>LexalSpace - Terms and Conditions</h3>
-            <div style={{ maxHeight: '250px', overflowY: 'auto', textAlign: 'left', fontSize: '13px', color: '#C9D1D9', lineHeight: '1.5', paddingRight: '10px' }}>
-              <p>১. <strong>বাস্তব নাম ব্যবহার:</strong> প্ল্যাটফর্মে সুস্থ পরিবেশ বজায় রাখতে প্রত্যেক ইউজারকে অবশ্যই তাদের বৈধ ফার্স্ট নেম এবং লাস্ট নেম ব্যবহার করতে হবে। কোনো প্রকার স্প্যাম, ফেক বা আপত্তিকর শব্দ সংবলিত নাম গ্রহণযোগ্য নয়।</p>
-              <p>২. <strong>নিরাপত্তা ও গোপনীয়তা:</strong> আপনার পাসওয়ার্ড এবং অ্যাকাউন্টের সম্পূর্ণ নিরাপত্তা বজায় রাখার দায়িত্ব আপনার। কোনো রোবোটিক বা স্ক্রিপ্টেড কার্যক্রম পরিচালনা করা সম্পূর্ণ নিষিদ্ধ।</p>
-              <p>৩. <strong>কনটেন্ট পলিসি:</strong> LexalSpace-এ কোনো প্রকার হিংসাত্মক, বেআইনি, কপিরাইট লঙ্ঘিত বা সমাজ-বিধ্বংসী পোস্ট বা মেসেজ আদান-প্রদান করা যাবে না। অমান্য করলে অ্যাকাউন্ট চিরতরে ব্যান করা হবে।</p>
+            <h3 style={{ color: '#58A6FF', marginTop: 0, fontSize: '18px' }}>LexalSpace - User Agreement</h3>
+            <div style={{ maxHeight: '280px', overflowY: 'auto', textAlign: 'left', fontSize: '13px', color: '#C9D1D9', lineHeight: '1.6', paddingRight: '8px' }}>
+              <p><strong>1. Authentic Profiling:</strong> To ensure safety, all users must register using real identities (First and Last Name). Fake names, placeholders, or profanity are immediately blacklisted.</p>
+              <p><strong>2. Account & Data Security:</strong> You are fully responsible for safeguarding your login credentials. Automation, scraping, or bot actions on LexalSpace will trigger immediate hardware-level bans.</p>
+              <p><strong>3. Content & Community Guidelines:</strong> Hate speech, harassment, copyright infringement, or illegal media sharing are strictly prohibited. LexalSpace reserves the right to terminate accounts instantly for violations.</p>
+              <p><strong>4. Verification & Recovery:</strong> Valid contact points (Email/Mobile) are crucial for ownership confirmation. Account recovery protocols rely explicitly on active OTP triggers.</p>
             </div>
-            <button onClick={() => setShowTermsModal(false)} style={styles.modalCloseBtn}>আই এগ্রি / বন্ধ করুন</button>
+            <button onClick={() => setShowTermsModal(false)} style={styles.modalCloseBtn}>AGREE & CLOSE</button>
           </div>
         </div>
       )}
@@ -288,14 +288,14 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
   );
 }
 
-// ইনলাইন সিএসএস স্টাইলস
 const styles = {
   label: { color: '#C9D1D9', fontSize: '13px', display: 'block', marginBottom: '6px', fontWeight: '500' },
   input: { width: '100%', padding: '12px', background: '#0D1117', border: '1px solid #30363D', borderRadius: '8px', color: '#FFF', fontSize: '14px', boxSizing: 'border-box', outline: 'none' },
-  suggestionBox: { position: 'absolute', left: 0, right: 0, background: '#161B22', border: '1px solid #30363D', borderRadius: '8px', zIndex: '999', maxHeight: '150px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' },
+  radioLabel: { color: '#FFF', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' },
+  suggestionBox: { position: 'absolute', left: 0, right: 0, background: '#161B22', border: '1px solid #30363D', borderRadius: '8px', zIndex: '999', maxHeight: '140px', overflowY: 'auto' },
   suggestionItem: { padding: '10px 12px', color: '#FFF', cursor: 'pointer', borderBottom: '1px solid #21262D', fontSize: '13px', textAlign: 'left' },
-  modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
-  modalContent: { background: '#161B22', border: '1px solid #30363D', padding: '24px', borderRadius: '12px', maxWidth: '400px', width: '90%', textAlign: 'center' },
-  modalCloseBtn: { background: '#21262D', color: '#58A6FF', border: '1px solid #30363D', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', marginTop: '16px', fontWeight: 'bold' }
+  modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
+  modalContent: { background: '#161B22', border: '1px solid #30363D', padding: '24px', borderRadius: '12px', maxWidth: '420px', width: '90%', textAlign: 'center' },
+  modalCloseBtn: { background: '#238636', color: '#FFF', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', marginTop: '16px', fontWeight: 'bold', fontSize: '13px' }
 };
-    
+                  
