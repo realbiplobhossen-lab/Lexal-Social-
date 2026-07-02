@@ -1,195 +1,334 @@
 import React, { useEffect, useState } from 'react';
 import { db, auth } from '../config/firebase';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { toggleLike } from '../services/appService';
-
-// ডেমো স্টোরি ডাটা (স্ক্রিনশটের BIPLEX হুবহু লুক আনার জন্য)
-const DEMO_STORIES = [
-  { id: '1', name: 'Rahim', avatar: 'https://i.pravatar.cc/150?img=11' },
-  { id: '2', name: 'Sumi', avatar: 'https://i.pravatar.cc/150?img=5' },
-  { id: '3', name: 'Zakir', avatar: 'https://i.pravatar.cc/150?img=12' },
-  { id: '4', name: 'Naeem', avatar: 'https://i.pravatar.cc/150?img=13' },
-];
+import { 
+  collection, query, orderBy, onSnapshot, doc, 
+  setDoc, updateDoc, deleteDoc, getDocs, where, addDoc, serverTimestamp 
+} from 'firebase/firestore';
 
 export default function HomeScreen() {
+  // মেইন নেভিগেশন ট্যাব স্টেট (feed, friends, messages, create, notifications, profile)
+  const [activeTab, setActiveTab] = useState('feed'); 
+  
+  // ডাটা স্টেটসমূহ
   const [posts, setPosts] = useState([]);
-  const [activeTab, setActiveTab] = useState('home');
+  const [stories, setStories] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [allUsers, setAllUsers] = useState([]);
+  const [friendRequests, setFriendRequests] = useState([]);
+  const [friendsList, setFriendsList] = useState([]);
+  
+  // ১. Create Post-এর জন্য ইনপুট স্টেট
+  const [postContent, setPostContent] = useState('');
+  const [mediaUrl, setMediaUrl] = useState('');
+  const [mediaType, setMediaType] = useState('image'); // image বা video
 
+  const currentUserId = auth.currentUser?.uid;
+  const currentUserName = auth.currentUser?.displayName || "Beauty Akter";
+  const currentUserAvatar = auth.currentUser?.photoURL || "https://via.placeholder.com/150";
+
+  // রিয়েল-টাইম ডাটা লোড (পোস্ট, স্টোরি, রিকোয়েস্ট, ফ্রেন্ডস)
   useEffect(() => {
-    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const postsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setPosts(postsData);
+    if (!currentUserId) return;
+
+    // পোস্ট ও স্টোরি
+    const qPosts = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+    const unsubPosts = onSnapshot(qPosts, (snapshot) => {
+      setPosts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
-    return () => unsubscribe();
-  }, []);
+
+    const qStories = query(collection(db, "stories"), orderBy("createdAt", "desc"));
+    const unsubStories = onSnapshot(qStories, (snapshot) => {
+      setStories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    // ফ্রেন্ড রিকোয়েস্ট
+    const qRequests = query(collection(db, "friendRequests"), where("toUid", "==", currentUserId), where("status", "==", "pending"));
+    const unsubRequests = onSnapshot(qRequests, (snapshot) => {
+      setFriendRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    // ফ্রেন্ড লিস্ট
+    const qFriends = query(collection(db, "friends"), where("users", "arrayContains", currentUserId));
+    const unsubFriends = onSnapshot(qFriends, (snapshot) => {
+      setFriendsList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    return () => { unsubPosts(); unsubStories(); unsubRequests(); unsubFriends(); };
+  }, [currentUserId]);
+
+  // ইউজার সার্চ ফাংশন
+  const handleSearchUsers = async () => {
+    if (!searchQuery.trim()) return;
+    try {
+      const q = query(collection(db, "users"), where("name", ">=", searchQuery), where("name", "<=", searchQuery + '\uf8ff'));
+      const querySnapshot = await getDocs(q);
+      const users = [];
+      querySnapshot.forEach((doc) => {
+        if (doc.id !== currentUserId) users.push({ uid: doc.id, ...doc.data() });
+      });
+      setAllUsers(users);
+      setActiveTab('friends'); 
+    } catch (error) {
+      console.error("Error searching users: ", error);
+    }
+  };
+
+  // ফ্রেন্ড রিকোয়েস্ট পাঠানো ও এক্সেপ্ট করা
+  const sendFriendRequest = async (targetUser) => {
+    const requestId = `${currentUserId}_${targetUser.uid}`;
+    await setDoc(doc(db, "friendRequests", requestId), {
+      fromUid: currentUserId,
+      fromName: currentUserName,
+      fromAvatar: currentUserAvatar,
+      toUid: targetUser.uid,
+      status: "pending",
+      timestamp: serverTimestamp()
+    });
+    alert(`🎉 ${targetUser.name}-কে রিকোয়েস্ট পাঠানো হয়েছে!`);
+  };
+
+  const acceptFriendRequest = async (request) => {
+    const friendDocId = `${currentUserId}_${request.fromUid}`;
+    await setDoc(doc(db, "friends", friendDocId), {
+      users: [currentUserId, request.fromUid],
+      userNames: [currentUserName, request.fromName],
+      avatars: [currentUserAvatar, request.fromAvatar],
+      createdAt: serverTimestamp()
+    });
+    await deleteDoc(doc(db, "friendRequests", request.id));
+    alert(`🤝 আপনি এখন ${request.fromName}-এর সাথে বন্ধু!`);
+  };
+
+  // লাইক মেকানিজম
+  const handleLike = async (postId, currentLikes = []) => {
+    const postRef = doc(db, "posts", postId);
+    if (currentLikes.includes(currentUserId)) {
+      await updateDoc(postRef, { likes: currentLikes.filter(id => id !== currentUserId) });
+    } else {
+      await updateDoc(postRef, { likes: [...currentLikes, currentUserId] });
+    }
+  };
+
+  // ২. রিয়েল পোস্ট ক্রিয়েশন ফাংশন (CREATE BUTTON-এর কাজ)
+  const handleCreatePost = async (e) => {
+    e.preventDefault();
+    if (!postContent.trim() && !mediaUrl.trim()) return;
+
+    try {
+      await addDoc(collection(db, "posts"), {
+        author: currentUserName,
+        authorAvatar: currentUserAvatar,
+        authorUid: currentUserId,
+        content: postContent,
+        mediaUrl: mediaUrl,
+        mediaType: mediaType,
+        likes: [],
+        createdAt: serverTimestamp()
+      });
+      setPostContent('');
+      setMediaUrl('');
+      setActiveTab('feed'); // পোস্ট হওয়ার পর অটোমেটিক হোম ফিডে নিয়ে যাবে
+      alert('🚀 আপনার পোস্টটি সফলভাবে পাবলিশ হয়েছে!');
+    } catch (error) {
+      console.error("Error adding post: ", error);
+    }
+  };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0D1117', color: '#C9D1D9', fontFamily: 'sans-serif', paddingBottom: '80px', boxSizing: 'border-box' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#0D1117', color: '#C9D1D9', fontFamily: 'sans-serif', boxSizing: 'border-box' }}>
       
-      {/* ১. টপ হেডার (BIPLEX স্টাইল ব্র্যান্ডিং ও আইকন) */}
-      <header style={{ position: 'sticky', top: 0, zIndex: 100, backgroundColor: '#161B22', borderBottom: '1px solid #30363D', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-          <span style={{ fontSize: '22px', fontWeight: '900', color: '#58A6FF', letterSpacing: '-0.5px' }}>BIP</span>
-          <span style={{ fontSize: '22px', fontWeight: '900', color: '#F0F6FC', letterSpacing: '-0.5px' }}>LEX</span>
+      {/* টপ হেডার */}
+      <header style={{ position: 'sticky', top: 0, zIndex: 100, backgroundColor: '#161B22', borderBottom: '1px solid #30363D', padding: '12px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyStyle: 'space-between', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <span style={{ fontSize: '22px', fontWeight: 'bold', color: '#58A6FF' }}>LexalSpace</span>
+          
+          {/* সার্চ বার */}
+          <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#0D1117', borderRadius: '20px', padding: '4px 12px', border: '1px solid #30363D', width: '55%' }}>
+            <input 
+              type="text" 
+              placeholder="Search Users..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearchUsers()}
+              style={{ width: '100%', background: 'none', border: 'none', color: '#FFF', outline: 'none', fontSize: '13px' }}
+            />
+            <button onClick={handleSearchUsers} style={{ background: 'none', border: 'none', color: '#58A6FF', cursor: 'pointer' }}>🔍</button>
+          </div>
         </div>
-        
-        {/* সার্চ, নোটিফিকেশন ও প্লাস বাটন */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-          <button style={{ background: 'none', border: 'none', color: '#8B949E', cursor: 'pointer', padding: 0 }}>
-            <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.604 10.603z" /></svg>
-          </button>
-          <button style={{ background: 'none', border: 'none', color: '#8B949E', cursor: 'pointer', padding: 0, position: 'relative' }}>
-            <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
-            <span style={{ position: 'absolute', top: '-5px', right: '-6px', backgroundColor: '#FF4D4F', color: 'white', fontSize: '10px', fontWeight: 'bold', borderRadius: '50%', width: '15px', height: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>3</span>
-          </button>
-          <button style={{ background: 'none', border: 'none', color: '#8B949E', cursor: 'pointer', padding: 0 }}>
-            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-          </button>
+
+        {/* টপ ক্যাটাগরি ট্যাব */}
+        <div style={{ display: 'flex', borderTop: '1px solid #21262D', paddingTop: '8px' }}>
+          <button onClick={() => setActiveTab('feed')} style={{ flex: 1, padding: '8px', background: 'none', border: 'none', color: activeTab === 'feed' ? '#58A6FF' : '#8B949E', borderBottom: activeTab === 'feed' ? '2px solid #58A6FF' : 'none', fontWeight: 'bold', cursor: 'pointer' }}>🏠 ফীড</button>
+          <button onClick={() => setActiveTab('friends')} style={{ flex: 1, padding: '8px', background: 'none', border: 'none', color: activeTab === 'friends' ? '#58A6FF' : '#8B949E', borderBottom: activeTab === 'friends' ? '2px solid #58A6FF' : 'none', fontWeight: 'bold', cursor: 'pointer', position: 'relative' }}>🔍 ফ্রেন্ডস</button>
+          <button onClick={() => setActiveTab('messages')} style={{ flex: 1, padding: '8px', background: 'none', border: 'none', color: activeTab === 'messages' ? '#58A6FF' : '#8B949E', borderBottom: activeTab === 'messages' ? '2px solid #58A6FF' : 'none', fontWeight: 'bold', cursor: 'pointer' }}>💬 মেসেজ</button>
         </div>
       </header>
 
-      {/* মেইন কন্টেন্ট এরিয়া */}
-      <div style={{ maxWidth: '500px', margin: '0 auto', padding: '16px 12px', boxSizing: 'border-box' }}>
+      {/* মেইন ভিউ কন্টেনার */}
+      <div style={{ maxWidth: '500px', margin: '0 auto', padding: '16px 12px', paddingBottom: '100px' }}>
         
-        {/* ২. স্টোরি বার (অনুভূমিক স্ক্রোলিং এবং গোল বাটন সহ পারফেক্ট ফিক্স) */}
-        <div style={{ backgroundColor: '#161B22', border: '1px solid #30363D', borderRadius: '16px', padding: '16px', display: 'flex', gap: '16px', overflowX: 'auto', marginBottom: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
-          
-          {/* Your Story বাটন */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, cursor: 'pointer' }}>
-            <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'linear-gradient(45deg, #58A6FF, #238636)', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-              <div style={{ width: '100%', height: '100%', borderRadius: '50%', backgroundColor: '#0D1117', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                <img src={auth.currentUser?.photoURL || "https://via.placeholder.com/150"} alt="Your Profile" style={{ width: '100%', height: '100%', objectCover: 'cover' }} />
-                <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontSize: '20px', fontWeight: 'bold' }}>+</div>
+        {/* ==================== ১. FEED VIEW ==================== */}
+        {activeTab === 'feed' && (
+          <>
+            {/* স্টোরি বার */}
+            <div style={{ backgroundColor: '#161B22', border: '1px solid #30363D', borderRadius: '12px', padding: '12px', display: 'flex', gap: '12px', overflowX: 'auto', marginBottom: '16px' }}>
+              <div onClick={() => alert('স্টোরি আপলোড ফিচার ওপেন হচ্ছে...')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, cursor: 'pointer' }}>
+                <div style={{ width: '50px', height: '50px', borderRadius: '50%', backgroundColor: '#238636', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', color: '#FFF', fontWeight: 'bold' }}>+</div>
+                <span style={{ fontSize: '11px', marginTop: '4px', color: '#8B949E' }}>Your Story</span>
               </div>
+              {stories.map(story => (
+                <div key={story.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                  <img src={story.userAvatar} alt="" style={{ width: '50px', height: '50px', borderRadius: '50%', border: '2px solid #58A6FF', objectFit: 'cover' }} />
+                  <span style={{ fontSize: '11px', marginTop: '4px' }}>{story.userName}</span>
+                </div>
+              ))}
             </div>
-            <span style={{ fontSize: '12px', color: '#8B949E', marginTop: '6px', fontWeight: '500' }}>Your Story</span>
-          </div>
 
-          {/* বন্ধুদের স্টোরি লুপ */}
-          {DEMO_STORIES.map(story => (
-            <div key={story.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, cursor: 'pointer' }}>
-              <div style={{ width: '56px', height: '56px', borderRadius: '50%', border: '2px solid #58A6FF', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src={story.avatar} alt={story.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-              </div>
-              <span style={{ fontSize: '12px', color: '#C9D1D9', marginTop: '6px', fontWeight: '500' }}>{story.name}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* ৩. নিউজ ফিড পোস্ট কার্ড লেআউট */}
-        {posts.length === 0 ? (
-          <div style={{ backgroundColor: '#161B22', border: '1px solid #30363D', borderRadius: '16px', padding: '32px', textAlign: 'center' }}>
-            <p style={{ color: '#8B949E', fontSize: '14px', margin: 0 }}>কোনো পোস্ট উপলব্ধ নেই। প্রথম পোস্টটি আপনিই করুন!</p>
-          </div>
-        ) : (
-          posts.map(post => {
-            const hasLiked = post.likes?.includes(auth.currentUser?.uid);
-            return (
-              <div key={post.id} style={{ backgroundColor: '#161B22', border: '1px solid #30363D', borderRadius: '16px', padding: '16px', marginBottom: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                
-                {/* পোস্ট হেডার (ইউজার ইনফো ও থ্রি-ডট) */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <img src={post.authorAvatar || "https://via.placeholder.com/150"} alt="User Avatar" style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #30363D' }} />
+            {/* পোস্ট ফিড লিস্ট */}
+            {posts.map(post => {
+              const isLiked = post.likes?.includes(currentUserId);
+              return (
+                <div key={post.id} style={{ backgroundColor: '#161B22', border: '1px solid #30363D', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <img src={post.authorAvatar || currentUserAvatar} style={{ width: '40px', height: '40px', borderRadius: '50%' }} alt="" />
                     <div>
-                      <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: '#F0F6FC' }}>{post.author}</h4>
-                      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#8B949E' }}>2 hours ago</p>
+                      <h4 style={{ margin: 0, fontSize: '14px' }}>{post.author}</h4>
+                      <span style={{ fontSize: '11px', color: '#8B949E' }}>Just now</span>
                     </div>
                   </div>
-                  <button style={{ background: 'none', border: 'none', color: '#8B949E', cursor: 'pointer' }}>
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
-                  </button>
-                </div>
-
-                {/* পোস্ট কন্টেন্ট টেক্সট */}
-                <p style={{ fontSize: '14px', color: '#E6EDF2', lineHeight: '1.5', margin: '0 0 12px 0', whiteSpace: 'pre-wrap' }}>{post.content}</p>
-
-                {/* মিডিয়া ফাইল রেন্ডারিং */}
-                {post.mediaUrl && post.mediaType === 'image' && (
-                  <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #30363D', backgroundColor: '#0D1117', marginBottom: '12px' }}>
-                    <img src={post.mediaUrl} alt="Post Media" style={{ width: '100%', maxHeight: '380px', objectFit: 'cover', display: 'block' }} />
-                  </div>
-                )}
-                {post.mediaUrl && post.mediaType === 'video' && (
-                  <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #30363D', backgroundColor: '#000', marginBottom: '12px' }}>
-                    <video src={post.mediaUrl} controls style={{ width: '100%', maxHeight: '380px', display: 'block' }} />
-                  </div>
-                )}
-
-                {/* কাউন্টার সেকশন (লাইক, কমেন্ট সংখ্যা) */}
-                <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', fontSize: '12px', color: '#8B949E', borderBottom: '1px solid #21262D', paddingBottom: '10px', marginBottom: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
-                    <span>❤️</span>
-                    <span style={{ color: '#C9D1D9', fontWeight: '500' }}>{post.likes?.length || 0}</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <span>0 comments</span>
-                    <span>5 shares</span>
+                  <p style={{ fontSize: '14px', lineHeight: '1.5', margin: '0 0 12px 0' }}>{post.content}</p>
+                  {post.mediaUrl && (
+                    <img src={post.mediaUrl} style={{ width: '100%', borderRadius: '8px', marginBottom: '12px', maxHeight: '300px', objectFit: 'cover' }} alt="Post media" />
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #21262D', paddingTop: '8px' }}>
+                    <button onClick={() => handleLike(post.id, post.likes)} style={{ background: 'none', border: 'none', color: isLiked ? '#FF4D4F' : '#8B949E', cursor: 'pointer', fontWeight: 'bold' }}>❤️ {post.likes?.length || 0} Like</button>
+                    <button style={{ background: 'none', border: 'none', color: '#8B949E', cursor: 'pointer' }}>💬 Comment</button>
+                    <button style={{ background: 'none', border: 'none', color: '#8B949E', cursor: 'pointer' }}>🔄 Share</button>
                   </div>
                 </div>
-
-                {/* অ্যাকশন বাটন সেকশন (লাইক, কমেন্ট, শেয়ার) */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <button 
-                    onClick={() => toggleLike(post.id, auth.currentUser.uid, hasLiked)}
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px 0', background: 'none', border: 'none', color: hasLiked ? '#FF4D4F' : '#8B949E', fontWeight: '600', fontSize: '13px', cursor: 'pointer', borderRadius: '8px', transition: 'background 0.2s' }}
-                  >
-                    <svg width="18" height="18" fill={hasLiked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
-                    <span>Like</span>
-                  </button>
-
-                  <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px 0', background: 'none', border: 'none', color: '#8B949E', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>
-                    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785A5.969 5.969 0 006 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337z" /></svg>
-                    <span>Comment</span>
-                  </button>
-
-                  <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px 0', background: 'none', border: 'none', color: '#8B949E', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>
-                    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" /></svg>
-                    <span>Share</span>
-                  </button>
-                </div>
-
-              </div>
-            );
-          })
+              );
+            })}
+          </>
         )}
+
+        {/* ==================== ২. FRIENDS VIEW ==================== */}
+        {activeTab === 'friends' && (
+          <div>
+            {friendRequests.map(req => (
+              <div key={req.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', backgroundColor: '#161B22', borderRadius: '8px', marginBottom: '8px' }}>
+                <span>{req.fromName} sent you a request</span>
+                <button onClick={() => acceptFriendRequest(req)} style={{ backgroundColor: '#238636', color: '#FFF', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Accept</button>
+              </div>
+            ))}
+            {allUsers.map(user => (
+              <div key={user.uid} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', backgroundColor: '#161B22', borderRadius: '8px', marginBottom: '8px' }}>
+                <span>{user.name}</span>
+                <button onClick={() => sendFriendRequest(user)} style={{ backgroundColor: '#58A6FF', color: '#FFF', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Add Friend</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ==================== ৩. MESSAGES VIEW ==================== */}
+        {activeTab === 'messages' && (
+          <div style={{ backgroundColor: '#161B22', border: '1px solid #30363D', borderRadius: '12px', padding: '16px' }}>
+            {friendsList.map(friend => {
+              const targetIndex = friend.users.indexOf(currentUserId) === 0 ? 1 : 0;
+              return (
+                <div key={friend.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #21262D' }}>
+                  <span>{friend.userNames[targetIndex]}</span>
+                  <button onClick={() => alert('Chat interface starting...')} style={{ background: '#21262D', color: '#58A6FF', border: 'none', padding: '6px 12px', borderRadius: '4px' }}>Chat</button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ==================== ৪. CREATE POST VIEW (সচল করা হলো) ==================== */}
+        {activeTab === 'create' && (
+          <div style={{ backgroundColor: '#161B22', border: '1px solid #30363D', borderRadius: '12px', padding: '20px' }}>
+            <h3 style={{ marginTop: 0, color: '#58A6FF' }}>Create New Post</h3>
+            <form onSubmit={handleCreatePost}>
+              <textarea 
+                placeholder="What's on your mind?" 
+                value={postContent}
+                onChange={(e) => setPostContent(e.target.value)}
+                style={{ width: '100%', height: '100px', backgroundColor: '#0D1117', color: '#FFF', border: '1px solid #30363D', borderRadius: '8px', padding: '10px', outline: 'none', boxSizing: 'border-box', marginBottom: '12px' }}
+              />
+              <input 
+                type="text" 
+                placeholder="Optional: Image/Video URL" 
+                value={mediaUrl}
+                onChange={(e) => setMediaUrl(e.target.value)}
+                style={{ width: '100%', backgroundColor: '#0D1117', color: '#FFF', border: '1px solid #30363D', borderRadius: '8px', padding: '10px', outline: 'none', boxSizing: 'border-box', marginBottom: '16px' }}
+              />
+              <button type="submit" style={{ width: '100%', backgroundColor: '#238636', color: 'white', padding: '12px', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>Publish Post 🚀</button>
+            </form>
+          </div>
+        )}
+
+        {/* ==================== ৫. NOTIFICATIONS VIEW (সচল করা হলো) ==================== */}
+        {activeTab === 'notifications' && (
+          <div style={{ backgroundColor: '#161B22', border: '1px solid #30363D', borderRadius: '12px', padding: '16px' }}>
+            <h3 style={{ marginTop: 0, color: '#58A6FF' }}>Notifications</h3>
+            {friendRequests.length === 0 ? (
+              <p style={{ color: '#8B949E', fontSize: '13px' }}>আপনার কোনো নতুন নোটিফিকেশন নেই।</p>
+            ) : (
+              friendRequests.map(req => (
+                <div key={req.id} style={{ padding: '10px', backgroundColor: '#0D1117', borderRadius: '6px', marginBottom: '8px', border: '1px solid #30363D' }}>
+                  🔔 <strong>{req.fromName}</strong> আপনাকে ফ্রেন্ড রিকোয়েস্ট পাঠিয়েছেন। অ্যাকশন নিতে ফ্রেন্ডস ট্যাবে যান।
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* ==================== 💻 ৬. PROFILE VIEW (সচল করা হলো) ==================== */}
+        {activeTab === 'profile' && (
+          <div style={{ backgroundColor: '#161B22', border: '1px solid #30363D', borderRadius: '12px', padding: '20px', textAlign: 'center' }}>
+            <img src={currentUserAvatar} style={{ width: '90px', height: '90px', borderRadius: '50%', border: '3px solid #58A6FF', marginBottom: '12px' }} alt="" />
+            <h2 style={{ margin: '0 0 4px 0' }}>{currentUserName}</h2>
+            <p style={{ color: '#8B949E', margin: '0 0 16px 0', fontSize: '14px' }}>LexalSpace Certified User</p>
+            <hr style={{ borderColor: '#21262D', marginBottom: '16px' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '14px' }}>
+              <div><strong>{posts.filter(p => p.authorUid === currentUserId).length}</strong><br/><span style={{color:'#8B949E'}}>Posts</span></div>
+              <div><strong>{friendsList.length}</strong><br/><span style={{color:'#8B949E'}}>Friends</span></div>
+            </div>
+          </div>
+        )}
+
       </div>
 
-      {/* ৪. ফিক্সড বটম নেভিগেশন বার (ইনলাইন স্টাইল দিয়ে হুবহু ফিক্সড লকড লেআউট) */}
-      <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: '#161B22', borderTop: '1px solid #30363D', padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 1000, boxShadow: '0 -4px 16px rgba(0,0,0,0.2)' }}>
+      {/* বটম ফিক্সড নেভিগেশন বার - সবগুলো বাটন এখন লাইভ ফাংশনাল */}
+      <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: '#161B22', borderTop: '1px solid #30363D', padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 1000 }}>
         
-        <button onClick={() => setActiveTab('home')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', background: 'none', border: 'none', color: activeTab === 'home' ? '#58A6FF' : '#8B949E', cursor: 'pointer', width: '60px' }}>
-          <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" /><path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z" /></svg>
-          <span style={{ fontSize: '10px', fontWeight: 'bold' }}>Home</span>
+        <button onClick={() => setActiveTab('feed')} style={{ background: 'none', border: 'none', color: activeTab === 'feed' ? '#58A6FF' : '#8B949E', cursor: 'pointer', textAlign: 'center' }}>
+          <div>🏠</div><span style={{ fontSize: '10px' }}>Home</span>
         </button>
 
-        <button onClick={() => setActiveTab('explore')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', background: 'none', border: 'none', color: activeTab === 'explore' ? '#58A6FF' : '#8B949E', cursor: 'pointer', width: '60px' }}>
-          <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9s2.015-9 4.5-9m0 0a9.004 9.004 0 018.716 2.253M12 3a9.004 9.004 0 00-8.716 2.253m0 0A9.003 9.003 0 0112 12c2.485 0 4.5 4.03 4.5 9M3.314 5.253A9.003 9.003 0 0112 12" /></svg>
-          <span style={{ fontSize: '10px', fontWeight: 'bold' }}>Explore</span>
+        <button onClick={() => setActiveTab('friends')} style={{ background: 'none', border: 'none', color: activeTab === 'friends' ? '#58A6FF' : '#8B949E', cursor: 'pointer', textAlign: 'center' }}>
+          <div>🧭</div><span style={{ fontSize: '10px' }}>Explore</span>
         </button>
 
-        {/* ক্রিয়েট বাটন (মাঝখানের ফ্লোটিং আকৃতির গোল প্লাস বাটন) */}
-        <button onClick={() => setActiveTab('create')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', width: '60px', position: 'relative' }}>
-          <div style={{ backgroundColor: '#238636', color: 'white', width: '42px', height: '42px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyStyle: 'center', justifyContent: 'center', marginTop: '-20px', border: '4px solid #0D1117', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>
-            <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="3.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-          </div>
-          <span style={{ fontSize: '10px', fontWeight: 'bold', color: activeTab === 'create' ? '#58A6FF' : '#8B949E', marginTop: '3px' }}>Create</span>
+        {/* মাঝখানের গোল প্লাস বাটন (ক্রিয়েট পোস্ট মোড অন করবে) */}
+        <button onClick={() => setActiveTab('create')} style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative' }}>
+          <div style={{ backgroundColor: '#238636', color: 'white', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '-20px', border: '4px solid #0D1117', fontWeight: 'bold', fontSize: '20px' }}>+</div>
+          <span style={{ fontSize: '10px', color: activeTab === 'create' ? '#58A6FF' : '#8B949E' }}>Create</span>
         </button>
 
-        <button onClick={() => setActiveTab('noti')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', background: 'none', border: 'none', color: activeTab === 'noti' ? '#58A6FF' : '#8B949E', cursor: 'pointer', width: '60px', position: 'relative' }}>
-          <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
-          <span style={{ position: 'absolute', top: '-2px', right: '12px', backgroundColor: '#FF4D4F', color: 'white', fontSize: '9px', fontWeight: 'bold', borderRadius: '50%', width: '14px', height: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #161B22' }}>3</span>
-          <span style={{ fontSize: '10px', fontWeight: 'bold' }}>Noti</span>
+        <button onClick={() => setActiveTab('notifications')} style={{ background: 'none', border: 'none', color: activeTab === 'notifications' ? '#58A6FF' : '#8B949E', cursor: 'pointer', textAlign: 'center', position: 'relative' }}>
+          <div>🔔</div>
+          {friendRequests.length > 0 && <span style={{ position: 'absolute', top: '-4px', right: '4px', backgroundColor: '#FF4D4F', color: 'white', fontSize: '9px', borderRadius: '50%', width: '14px', height: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{friendRequests.length}</span>}
+          <span style={{ fontSize: '10px' }}>Noti</span>
         </button>
 
-        <button onClick={() => setActiveTab('profile')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', background: 'none', border: 'none', color: activeTab === 'profile' ? '#58A6FF' : '#8B949E', cursor: 'pointer', width: '60px' }}>
-          <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-          <span style={{ fontSize: '10px', fontWeight: 'bold' }}>Profile</span>
+        <button onClick={() => setActiveTab('profile')} style={{ background: 'none', border: 'none', color: activeTab === 'profile' ? '#58A6FF' : '#8B949E', cursor: 'pointer', textAlign: 'center' }}>
+          <div>👤</div><span style={{ fontSize: '10px' }}>Profile</span>
         </button>
+        
       </nav>
 
     </div>
   );
-      }
-                       
+  }
+      
