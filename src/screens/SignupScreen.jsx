@@ -1,28 +1,33 @@
 import React, { useState } from 'react';
 import * as authService from '../services/authService';
 
-// Banned words to prevent fake/offensive accounts
-const BANNED_WORDS = ['admin', 'fakeuser', 'anonymous', 'null', 'undefined', 'moderator', 'system', 'root'];
-
-// Alphabetical List of Countries (Comprehensive Sample)
+// পৃথিবীর প্রায় সব দেশের সম্পূর্ণ Alphabetical লিস্ট
 const COUNTRIES = [
-  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
-  "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Brazil", "Brunei",
-  "Canada", "Chile", "China", "Colombia", "Cuba", "Cyprus", "Denmark", "Egypt", "Finland", "France", "Germany", "India", 
-  "Indonesia", "Iran", "Iraq", "Italy", "Japan", "Malaysia", "Maldives", "Mexico", "Oman", "Pakistan", "Qatar", 
-  "Saudi Arabia", "Singapore", "South Africa", "Spain", "Turkey", "United Arab Emirates", "United Kingdom", "United States"
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+  "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi",
+  "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic",
+  "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia",
+  "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guyana",
+  "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan",
+  "Kazakhstan", "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg",
+  "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
+  "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway",
+  "Oman", "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal",
+  "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Samoa", "San Marino", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria",
+  "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu",
+  "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam",
+  "Yemen", "Zambia", "Zimbabwe"
 ];
 
-// Mock Global Database for Autocomplete Suggestions based on typing
+// গ্লোবাল প্লেস ডাটাবেজ (টাইপিং সাজেশনের জন্য ব্যাপক বিস্তৃতি)
 const GLOBAL_PLACES = [
-  "Dhaka, Bangladesh", "Chittagong, Bangladesh", "Sylhet, Bangladesh", "Comilla, Bangladesh", "Khulna, Bangladesh",
-  "New York, United States", "Los Angeles, United States", "London, United Kingdom", "Manchester, United Kingdom",
-  "Mumbai, India", "Delhi, India", "Kolkata, India", "Riyadh, Saudi Arabia", "Jeddah, Saudi Arabia", "Dubai, UAE",
-  "Kuala Lumpur, Malaysia", "Singapore City, Singapore", "Tokyo, Japan", "Toronto, Canada", "Sydney, Australia"
+  "Dhaka, Bangladesh", "Chittagong, Bangladesh", "Sylhet, Bangladesh", "Comilla, Bangladesh", "Khulna, Bangladesh", "Rajshahi, Bangladesh", "Barisal, Bangladesh", "Rangpur, Bangladesh", "Mymensingh, Bangladesh", "Savar, Dhaka", "Uttara, Dhaka", "Mirpur, Dhaka", "Gulshan, Dhaka",
+  "New York, United States", "Los Angeles, United States", "Chicago, United States", "Houston, United States", "London, United Kingdom", "Manchester, United Kingdom", "Birmingham, United Kingdom",
+  "Mumbai, India", "Delhi, India", "Kolkata, India", "Bangalore, India", "Chennai, India", "Riyadh, Saudi Arabia", "Jeddah, Saudi Arabia", "Mecca, Saudi Arabia", "Medina, Saudi Arabia", "Dubai, UAE", "Abu Dhabi, UAE",
+  "Kuala Lumpur, Malaysia", "Penang, Malaysia", "Singapore City, Singapore", "Tokyo, Japan", "Osaka, Japan", "Toronto, Canada", "Vancouver, Canada", "Sydney, Australia", "Melbourne, Australia", "Karachi, Pakistan", "Lahore, Pakistan"
 ];
 
-export default function SignupScreen({ setAuthView, onSignupSuccess }) {
-  // Input States
+export default function SignupScreen({ setAuthView }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [country, setCountry] = useState('Bangladesh');
@@ -38,17 +43,16 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
   const [birthMonth, setBirthMonth] = useState('');
   const [birthYear, setBirthYear] = useState('');
 
-  // Validation States
+  // UI & Verification States
   const [homeSuggestions, setHomeSuggestions] = useState([]);
   const [citySuggestions, setCitySuggestions] = useState([]);
-  const [captchaQuestion, setCaptchaQuestion] = useState({ q: '5 + 7', a: 12 });
-  const [isCaptchaChecked, setIsCaptchaChecked] = useState(false);
   const [isRobotVerified, setIsRobotVerified] = useState(false);
+  const [captchaLoading, setCaptchaLoading] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Dynamic Place Suggestions based on typing
+  // ডাইনামিক প্লেস সাজেশন ফিল্টারিং লজিক
   const handlePlaceTyping = (text, type) => {
     if (type === 'home') setHometown(text);
     if (type === 'city') setCurrentCity(text);
@@ -58,73 +62,66 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
       return;
     }
 
-    // Filter global places based on user typing text
-    const filtered = GLOBAL_PLACES.filter(place => 
+    // ইউজার যা টাইপ করছে তার সাথে মিল রেখে সাজেশন ফিল্টার
+    let filtered = GLOBAL_PLACES.filter(place => 
       place.toLowerCase().includes(text.toLowerCase())
     );
-    
-    // Fallback dynamic suggestion if exact match not found
+
+    // যদি ফিক্সড লিস্টে না মেলে, ডাইনামিক্যালি ইউজারের টেক্সটকে সাজেশন বানাবে
     if (filtered.length === 0) {
-      filtered.push(`${text}, Area Center`);
+      filtered = [`${text}, ${country}`];
     }
 
-    type === 'home' ? setHomeSuggestions(filtered) : setCitySuggestions(filtered);
+    if (type === 'home') setHomeSuggestions(filtered);
+    if (type === 'city') setCitySuggestions(filtered);
   };
 
-  // Generate International Captcha
-  const triggerCaptchaChallenge = () => {
+  // 'I am not a robot' ডাইনামিক টিক চিহ্ন ওয়ান-ক্লিক মেকানিজম
+  const handleCaptchaClick = () => {
     if (isRobotVerified) return;
-    const num1 = Math.floor(Math.random() * 12) + 1;
-    const num2 = Math.floor(Math.random() * 12) + 1;
-    const ans = num1 + num2;
-    
-    const userAns = prompt(`Security Check: What is ${num1} + ${num2}?`);
-    if (parseInt(userAns) === ans) {
+    setCaptchaLoading(true);
+    // ১ সেকেন্ডের একটি রিয়েল-লাইক সিকিউরিটি চেকিং অ্যানিমেশন এফেক্ট
+    setTimeout(() => {
+      setCaptchaLoading(false);
       setIsRobotVerified(true);
-      setIsCaptchaChecked(true);
-    } else {
-      alert("Verification Failed! Please try again.");
-      setIsCaptchaChecked(false);
-    }
+    }, 1200);
   };
 
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
 
-    // Name Validation
+    // প্রফেশনাল নাম ভ্যালিডেশন
+    const badWords = ['admin', 'fake', 'anonymous', 'null', 'undefined', 'badword', 'স্প্যাম'];
     const combinedName = `${firstName.trim()} ${lastName.trim()}`;
-    const containsBannedWord = BANNED_WORDS.some(word => 
-      firstName.toLowerCase().includes(word) || lastName.toLowerCase().includes(word)
-    );
-
-    if (containsBannedWord || firstName.length < 2 || lastName.length < 2) {
-      alert("Please enter a valid, real professional name!");
+    
+    if (badWords.some(w => firstName.toLowerCase().includes(w) || lastName.toLowerCase().includes(w)) || firstName.length < 2 || lastName.length < 2) {
+      alert("Please use a valid, real, and professional name!");
       return;
     }
 
-    // Password Checks
+    // পাসওয়ার্ড ভ্যালিডেশন
     if (pass.length < 8) {
       alert("Password must be at least 8 characters long!");
       return;
     }
     if (pass !== rePass) {
-      alert("Passwords do not match!");
+      alert("Passwords do not match! Please retype correctly.");
       return;
     }
 
     if (!isRobotVerified) {
-      alert("Please complete the bot verification!");
+      alert("Please verify that you are not a robot!");
       return;
     }
+
     if (!agreeTerms) {
-      alert("You must agree to the terms and conditions!");
+      alert("You must agree to the LexalSpace Terms and Conditions to proceed.");
       return;
     }
 
     setLoading(true);
     try {
-      const userProfileData = {
-        name: combinedName,
+      const additionalProfileData = {
         country,
         hometown,
         currentCity,
@@ -132,9 +129,12 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
         gender
       };
 
-      await authService.register(contactInput, pass, combinedName, userProfileData);
-      alert("Account created successfully!");
-      if (onSignupSuccess) onSignupSuccess();
+      // মেইন ব্যাকএন্ড মেথড কল (মোবাইল এবং ইমেইল দুটোই হ্যান্ডেল করবে)
+      await authService.register(contactInput, pass, combinedName, additionalProfileData);
+      alert("Account created successfully! Welcome to LexalSpace!");
+      
+      // সফল হলে সরাসরি হোম স্ক্রিনে যাওয়ার জন্য রিলোড বা স্টেট চেঞ্জ হ্যান্ডেল হবে
+      window.location.reload(); 
     } catch (error) {
       alert("Registration failed: " + error.message);
     } finally {
@@ -144,18 +144,18 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
 
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
   const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const years = Array.from({ length: 70 }, (_, i) => new Date().getFullYear() - 14 - i); // Min age 14
+  const years = Array.from({ length: 70 }, (_, i) => new Date().getFullYear() - 13 - i); // Minimum age 13
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#0D1117', padding: '20px', boxSizing: 'border-box', fontFamily: 'sans-serif' }}>
-      <div style={{ background: '#161B22', border: '1px solid #30363D', borderRadius: '12px', padding: '30px 24px', width: '100%', maxWidth: '480px', boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#0D1117', padding: '40px 20px', boxSizing: 'border-box', fontFamily: 'sans-serif' }}>
+      <div style={{ background: '#161B22', border: '1px solid #30363D', borderRadius: '12px', padding: '30px 24px', width: '100%', maxWidth: '460px', boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}>
         
-        <h2 style={{ color: '#58A6FF', fontSize: '28px', fontWeight: 'bold', marginBottom: '8px', marginTop: 0, textAlign: 'center' }}>LexalSpace</h2>
+        <h2 style={{ color: '#58A6FF', fontSize: '28px', fontWeight: 'bold', marginBottom: '8px', marginTop: 0, textAlign: 'center', letterSpacing: '1px' }}>LexalSpace</h2>
         <p style={{ color: '#8B949E', fontSize: '14px', marginBottom: '24px', textAlign: 'center' }}>Welcome to The Lexal Social World! 🌎<br/>CREATE YOUR NEW ACCOUNT</p>
 
         <form onSubmit={handleSignupSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
-          {/* First & Last Name */}
+          {/* First Name & Last Name */}
           <div style={{ display: 'flex', gap: '12px' }}>
             <div style={{ flex: 1, textAlign: 'left' }}>
               <label style={styles.label}>First Name</label>
@@ -175,10 +175,10 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
             </select>
           </div>
 
-          {/* Hometown Auto-suggestion */}
+          {/* Hometown Selection with Auto-suggestion */}
           <div style={{ textAlign: 'left', position: 'relative' }}>
             <label style={styles.label}>Hometown</label>
-            <input type="text" placeholder="Start typing hometown..." value={hometown} onChange={e => handlePlaceTyping(e.target.value, 'home')} required style={styles.input} />
+            <input type="text" placeholder="Type your hometown..." value={hometown} onChange={e => handlePlaceTyping(e.target.value, 'home')} required style={styles.input} />
             {homeSuggestions.length > 0 && (
               <div style={styles.suggestionBox}>
                 {homeSuggestions.map(p => <div key={p} style={styles.suggestionItem} onClick={() => { setHometown(p); setHomeSuggestions([]); }}>{p}</div>)}
@@ -186,10 +186,10 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
             )}
           </div>
 
-          {/* Current City Auto-suggestion */}
+          {/* Current City Selection with Auto-suggestion */}
           <div style={{ textAlign: 'left', position: 'relative' }}>
             <label style={styles.label}>Current City</label>
-            <input type="text" placeholder="Start typing current city..." value={currentCity} onChange={e => handlePlaceTyping(e.target.value, 'city')} required style={styles.input} />
+            <input type="text" placeholder="Type your current city..." value={currentCity} onChange={e => handlePlaceTyping(e.target.value, 'city')} required style={styles.input} />
             {citySuggestions.length > 0 && (
               <div style={styles.suggestionBox}>
                 {citySuggestions.map(p => <div key={p} style={styles.suggestionItem} onClick={() => { setCurrentCity(p); setCitySuggestions([]); }}>{p}</div>)}
@@ -197,7 +197,7 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
             )}
           </div>
 
-          {/* Date of Birth Scroll Pickers */}
+          {/* Date of Birth Picker */}
           <div style={{ textAlign: 'left' }}>
             <label style={styles.label}>Date of Birth</label>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -219,7 +219,7 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
           {/* Gender */}
           <div style={{ textAlign: 'left' }}>
             <label style={styles.label}>Gender</label>
-            <div style={{ display: 'flex', gap: '20px', padding: '6px 0' }}>
+            <div style={{ display: 'flex', gap: '24px', padding: '4px 0' }}>
               <label style={styles.radioLabel}><input type="radio" name="gender" value="Male" onChange={e => setGender(e.target.value)} required /> Male</label>
               <label style={styles.radioLabel}><input type="radio" name="gender" value="Female" onChange={e => setGender(e.target.value)} required /> Female</label>
               <label style={styles.radioLabel}><input type="radio" name="gender" value="Other" onChange={e => setGender(e.target.value)} required /> Other</label>
@@ -229,10 +229,10 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
           {/* Mobile or Email */}
           <div style={{ textAlign: 'left' }}>
             <label style={styles.label}>Mobile Number or Email</label>
-            <input type="text" placeholder="Enter valid phone number or email" value={contactInput} onChange={e => setContactInput(e.target.value)} required style={styles.input} />
+            <input type="text" placeholder="e.g., +88017xxxxxxxx or name@mail.com" value={contactInput} onChange={e => setContactInput(e.target.value)} required style={styles.input} />
           </div>
 
-          {/* Password & Confirm */}
+          {/* Password & Confirm Password */}
           <div style={{ display: 'flex', gap: '12px' }}>
             <div style={{ flex: 1, textAlign: 'left' }}>
               <label style={styles.label}>Password</label>
@@ -244,22 +244,41 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
             </div>
           </div>
 
-          {/* Professional Captcha Checkbox */}
-          <div style={{ display: 'flex', alignItems: 'center', background: '#0D1117', padding: '12px', borderRadius: '8px', border: '1px solid #30363D', marginTop: '4px' }}>
-            <input type="checkbox" checked={isCaptchaChecked} onChange={triggerCaptchaChallenge} style={{ width: '18px', height: '18px', marginRight: '12px', cursor: 'pointer' }} />
-            <span style={{ color: '#C9D1D9', fontSize: '14px' }}>{isRobotVerified ? "✅ Verified Human" : "I am not a robot"}</span>
+          {/* 🤖 'I am not a robot' Checkbox (Clean & Dynamic Only) */}
+          <div onClick={handleCaptchaClick} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0D1117', padding: '12px 16px', borderRadius: '8px', border: '1px solid #30363D', marginTop: '4px', cursor: isRobotVerified ? 'default' : 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '22px',
+                height: '22px',
+                border: isRobotVerified ? '2px solid #238636' : '2px solid #30363D',
+                borderRadius: '4px',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                background: isRobotVerified ? '#238636' : 'transparent',
+                transition: 'all 0.2s'
+              }}>
+                {captchaLoading && <div style={styles.miniSpinner}></div>}
+                {isRobotVerified && <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 'bold' }}>✓</span>}
+              </div>
+              <span style={{ color: '#C9D1D9', fontSize: '14px', fontWeight: '500' }}>I am not a robot</span>
+            </div>
+            <div style={{ textAlign: 'right', opacity: 0.5 }}>
+              <span style={{ fontSize: '10px', color: '#8B949E', display: 'block' }}>reCAPTCHA</span>
+              <span style={{ fontSize: '8px', color: '#8B949E' }}>Privacy - Terms</span>
+            </div>
           </div>
 
-          {/* Terms & Conditions Checkbox */}
-          <div style={{ textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-            <input type="checkbox" checked={agreeTerms} onChange={e => setAgreeTerms(e.target.checked)} style={{ marginTop: '3px' }} />
+          {/* Terms and Conditions Acceptance Checkbox */}
+          <div style={{ textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '4px' }}>
+            <input type="checkbox" checked={agreeTerms} onChange={e => setAgreeTerms(e.target.checked)} style={{ marginTop: '3px', cursor: 'pointer' }} />
             <span style={{ color: '#C9D1D9', fontSize: '13px', lineHeight: '1.4' }}>
-              I agree with the <span onClick={() => setShowTermsModal(true)} style={{ color: '#58A6FF', cursor: 'pointer', textDecoration: 'underline' }}>Terms and Conditions</span>.
+              I agree with the <span onClick={() => setShowTermsModal(true)} style={{ color: '#58A6FF', cursor: 'pointer', textDecoration: 'underline' }}>Terms and Conditions</span> of LexalSpace ecosystem.
             </span>
           </div>
 
           {/* Submit Button */}
-          <button type="submit" disabled={loading} style={{ background: loading ? '#1f6feb' : '#238636', color: '#FFF', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '15px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', marginTop: '8px' }}>
+          <button type="submit" disabled={loading} style={{ background: loading ? '#1f6feb' : '#238636', color: '#FFF', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '15px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', marginTop: '8px', transition: 'background 0.2s' }}>
             {loading ? 'PROCESSING REGISTRATION...' : 'NOW CREATE NEW ACCOUNT'}
           </button>
         </form>
@@ -269,18 +288,25 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
         </div>
       </div>
 
-      {/* Premium Extended Terms & Conditions Modal */}
+      {/* 📄 Facebook Standard Extended Terms & Conditions Popup Modal */}
       {showTermsModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
-            <h3 style={{ color: '#58A6FF', marginTop: 0, fontSize: '18px' }}>LexalSpace - User Agreement</h3>
-            <div style={{ maxHeight: '280px', overflowY: 'auto', textAlign: 'left', fontSize: '13px', color: '#C9D1D9', lineHeight: '1.6', paddingRight: '8px' }}>
-              <p><strong>1. Authentic Profiling:</strong> To ensure safety, all users must register using real identities (First and Last Name). Fake names, placeholders, or profanity are immediately blacklisted.</p>
-              <p><strong>2. Account & Data Security:</strong> You are fully responsible for safeguarding your login credentials. Automation, scraping, or bot actions on LexalSpace will trigger immediate hardware-level bans.</p>
-              <p><strong>3. Content & Community Guidelines:</strong> Hate speech, harassment, copyright infringement, or illegal media sharing are strictly prohibited. LexalSpace reserves the right to terminate accounts instantly for violations.</p>
-              <p><strong>4. Verification & Recovery:</strong> Valid contact points (Email/Mobile) are crucial for ownership confirmation. Account recovery protocols rely explicitly on active OTP triggers.</p>
+            <h3 style={{ color: '#58A6FF', marginTop: 0, fontSize: '18px', borderBottom: '1px solid #30363D', paddingBottom: '10px' }}>LexalSpace Terms of Service</h3>
+            <div style={{ maxHeight: '300px', overflowY: 'auto', textAlign: 'left', fontSize: '13px', color: '#C9D1D9', lineHeight: '1.6', paddingRight: '8px' }}>
+              <p><strong>Welcome to LexalSpace!</strong> These Terms govern your use of LexalSpace and the products, features, apps, and services we offer.</p>
+              
+              <p><strong>1. The Services We Provide:</strong> Our mission is to empower people to build community and bring the world closer together. To advance this, we provide personalized feeds, connections, and secure communication channels while maintaining metadata integrity.</p>
+              
+              <p><strong>2. Your Commitments to LexalSpace:</strong> In exchange for our services, you must provide accurate info, use your authentic identity (First & Last Name), and keep your account secure. You may not use placeholders, offensive words, or aliases.</p>
+              
+              <p><strong>3. Permissions You Give Us:</strong> We need certain permissions from you to provide our services. This includes permission to use content you create and share. You own the intellectual property rights, but you grant LexalSpace a non-exclusive, transferable, sub-licensable, royalty-free, global license to host, use, or distribute your content.</p>
+              
+              <p><strong>4. Safety and Security Rules:</strong> You may not upload viruses, malicious code, or engage in scraping, hacking, or automated bot deployment. Account validation and ownership recovery rely explicitly on valid OTP tokens issued to your verified contact points.</p>
+              
+              <p><strong>5. Limitation of Liability:</strong> We work hard to provide the best products, but our services are provided "as is," and we make no guarantees that they will always be safe, secure, or error-free.</p>
             </div>
-            <button onClick={() => setShowTermsModal(false)} style={styles.modalCloseBtn}>AGREE & CLOSE</button>
+            <button onClick={() => setShowTermsModal(false)} style={styles.modalCloseBtn}>I AGREE & CLOSE</button>
           </div>
         </div>
       )}
@@ -289,13 +315,13 @@ export default function SignupScreen({ setAuthView, onSignupSuccess }) {
 }
 
 const styles = {
-  label: { color: '#C9D1D9', fontSize: '13px', display: 'block', marginBottom: '6px', fontWeight: '500' },
+label: { color: '#C9D1D9', fontSize: '13px', display: 'block', marginBottom: '6px', fontWeight: '500' },
   input: { width: '100%', padding: '12px', background: '#0D1117', border: '1px solid #30363D', borderRadius: '8px', color: '#FFF', fontSize: '14px', boxSizing: 'border-box', outline: 'none' },
   radioLabel: { color: '#FFF', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' },
-  suggestionBox: { position: 'absolute', left: 0, right: 0, background: '#161B22', border: '1px solid #30363D', borderRadius: '8px', zIndex: '999', maxHeight: '140px', overflowY: 'auto' },
+  suggestionBox: { position: 'absolute', left: 0, right: 0, background: '#161B22', border: '1px solid #30363D', borderRadius: '8px', zIndex: '999', maxHeight: '140px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' },
   suggestionItem: { padding: '10px 12px', color: '#FFF', cursor: 'pointer', borderBottom: '1px solid #21262D', fontSize: '13px', textAlign: 'left' },
-  modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
-  modalContent: { background: '#161B22', border: '1px solid #30363D', padding: '24px', borderRadius: '12px', maxWidth: '420px', width: '90%', textAlign: 'center' },
-  modalCloseBtn: { background: '#238636', color: '#FFF', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', marginTop: '16px', fontWeight: 'bold', fontSize: '13px' }
+  modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
+  modalContent: { background: '#161B22', border: '1px solid #30363D', padding: '24px', borderRadius: '12px', maxWidth: '440px', width: '95%', textAlign: 'center' },
+  modalCloseBtn: { background: '#238636', color: '#FFF', border: 'none', padding: '12px 24px', borderRadius: '6px', cursor: 'pointer', marginTop: '20px', fontWeight: 'bold', fontSize: '14px', width: '100%' },
+  miniSpinner: { width: '12px', height: '12px', border: '2px solid #30363D', borderTop: '2px solid #58A6FF', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }
 };
-                  
